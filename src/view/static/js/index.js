@@ -1,10 +1,11 @@
 const URL = "127.0.0.1"
     , PORT = 9004
+    , TOKEN = 1234
     ;
 
 
 const makeUrl = function(client_id) {
-    return `ws://${URL}:${PORT}/${client_id}`
+    return `ws://${URL}:${PORT}/${TOKEN}`
 }
 
 
@@ -21,20 +22,32 @@ class PocketSocket extends WebSocket {
         return w
     }
 
+    isOpen = false
     onopen() {
-        console.log('onopen', arguments)
+        let m = `${this._id} onopen`
+        const args = Array.from(arguments)
+        this.isOpen = true
+        console.log(m, args)
     }
 
-    onmessage() {
-        console.log('onmessage', arguments)
+    onmessage(e) {
+        let m = `${this._id} onmessage`
+        const args = Array.from(arguments)
+
+        console.log(m, e.data)
     }
 
     onerror() {
-        console.log('onerror', arguments)
+        let m = `${this._id} onerror`
+        const args = Array.from(arguments)
+        console.log(m, args)
     }
 
     onclose() {
-        console.log('onclose', arguments)
+        let m = `${this._id} onclose`
+        this.isOpen = false
+        const args = Array.from(arguments)
+        console.log(m, args)
     }
 
     sendBytes(count=17, fill=42) {
@@ -44,8 +57,41 @@ class PocketSocket extends WebSocket {
     }
 }
 
-var client_id = Date.now()
+class MultiSocket {
+    /* Manage many sockets */
 
+    generate(count) {
+        this.sockets = generateMany(count)
+    }
+
+    each(f) {
+        this.sockets.forEach(f)
+    }
+
+    send(t) {
+        this.each((w)=> w.send(t))
+    }
+
+    close() {
+        this.each(x=>x.close())
+    }
+
+    openCount() {
+        let c = 0
+        this.sockets.forEach(s=>c += s.isOpen)
+        return c
+    }
+
+    static create(count) {
+        const r = new MultiSocket
+        r.generate(count)
+        return r
+    }
+}
+
+
+
+var client_id = Date.now()
 
 var newSocket = function(client_id){
     const url = makeUrl(client_id)
@@ -54,10 +100,32 @@ var newSocket = function(client_id){
     return ws
 }
 
+const pump = function(count=9, create=30){
+    for (var i = 0; i < count; i++) {
+        let v = MultiSocket.create(create)
+        setTimeout(function(){
+            this.multiSocket.close()
+        }.bind({multiSocket:v}), 3000)
+    }
+}
+
 var emitEvent = function(event) {
     events.emit('socket-message', event)
 }
 
+
 var send = function(text) {
     ws.send(text)
+}
+
+
+var generateMany = function(count=5) {
+    const r = []
+    for (var i = 0; i < count; i++) {
+        let url = makeUrl(i)
+        let w = PocketSocket.connect(url)
+        w._id = i
+        r.push(w)
+    }
+    return r
 }
