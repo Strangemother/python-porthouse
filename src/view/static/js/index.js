@@ -1,6 +1,6 @@
 const URL = "127.0.0.1"
     , PORT = 9004
-    , TOKEN = 1234
+    , TOKEN = 1111
     ;
 
 

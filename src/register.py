@@ -30,6 +30,8 @@ import gc
 from collections import defaultdict
 import uuid
 
+import rooms
+
 
 CONNECTIONS = {
     'sockets': {},
@@ -44,9 +46,9 @@ class Register(object):
     def get_connections(self):
         return CONNECTIONS['sockets']
 
-    async def add(self, websocket):
+    async def add(self, websocket, _uuid):
         # bind client
-        _uuid = str(uuid.uuid4())
+        _uuid = _uuid or str(uuid.uuid4())
         setattr(websocket, self.uuid_param, _uuid)
         CONNECTIONS['sockets'][_uuid] = websocket
         CONNECTIONS['_count'] += 1
@@ -60,25 +62,38 @@ class Register(object):
         t = CONNECTIONS['_total']
         dlog(f'Count: {count}, real: {l}, total: {t}')
 
+    async def resolve_sockets(self, names, ignores=None):
+        live = CONNECTIONS['sockets']
+        ignores = ignores or ()
+        res = ()
+        for name in names:
+            if name in ignores:
+                continue
+            socket = live.get(name)
+            if socket:
+                res += (socket,)
+        return res
+
     async def remove(self, websocket, error=None):
         """Called automatically or requested through the API to _disconnect_
         the target websocket by sending a close 1000 event.
         """
         _uuid = getattr(websocket, self.uuid_param)
         dlog(f'drop: {_uuid}')
-        v = CONNECTIONS['sockets'].pop(_uuid, None)
-        total = CONNECTIONS['_total']
+        sid = CONNECTIONS['sockets'].pop(_uuid, None)
 
+        if sid is not None:
+            CONNECTIONS['_count'] -= 1
+            self.log_count()
+            return _uuid
+
+    def _garbage_collect(self):
+        total = CONNECTIONS['_total']
         if total % 100 == 0:
             print('\nCollecting\n')
             gc.collect()  # Force garbage collection
             v = gc.garbage
             dlog(f'garbage {v}')
-
-        if v is not None:
-            CONNECTIONS['_count'] -= 1
-            self.log_count()
-            return _uuid
 
 
 live_register = Register()

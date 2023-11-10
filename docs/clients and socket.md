@@ -39,3 +39,9 @@ When a socket sends a message it heads directly to the room.
 All sockets within the same room gain the message.
 
 
+## Socket
+
+
+- authorize: A socket request to a room, asking for a client bonding; most likely permanent.
+
+- subscribe: a socket requests bindings to a room

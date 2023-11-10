@@ -58,4 +58,6 @@ async def primary_ingress(websocket, **kw):
         # 'send', 'send_bytes', 'send_json', 'send_text',
         if receipt is not None:
             await websocket.send_text(receipt)
+    else:
+        await websocket.close()
 

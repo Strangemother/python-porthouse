@@ -19,6 +19,7 @@ class Rule(object):
 
 
 class IPAddressRule(Rule):
+    host = None
 
     def is_valid(self, websocket, **extras):
         # return websocket.client.host == '127.0.0.1'
@@ -26,6 +27,7 @@ class IPAddressRule(Rule):
 
 
 class TokenRule(Rule):
+    param = None
 
     def is_valid(self, websocket, **extras):
         token = extras.get(self.param, None)
