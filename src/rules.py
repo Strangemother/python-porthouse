@@ -11,6 +11,7 @@ import tokens
 
 class Rule(object):
 
+    check_port = True
     def __init__(self, **extras):
         self.__dict__.update(**extras)
 
@@ -22,8 +23,9 @@ class IPAddressRule(Rule):
     host = None
 
     def is_valid(self, websocket, **extras):
-        # return websocket.client.host == '127.0.0.1'
-        return websocket.headers['host'] == self.host
+        if self.check_port is True:
+            return websocket.headers['host'] == self.host
+        return websocket.client.host == self.host
 
 
 class TokenRule(Rule):
