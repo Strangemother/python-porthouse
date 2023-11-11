@@ -32,14 +32,49 @@ import tokens, rooms
 import uuid
 import config as conf
 
+import backpipe
+import asyncio
+
 
 class Router(object):
     def __init__(self):
-        host = f'{conf.HOST}:{conf.PORT}'
+        host = f'{conf.HOST}'#:{conf.PORT}'
+        self._pipe = backpipe.BackPipe(self.backpipe_recv)
+
         self.access_rules = RuleSet(
-                IPAddressRule(host=host),
+                IPAddressRule(host=host, check_port=False),
                 TokenRule(param='token'),
             )
+
+    async def set_primary_sockets(self, addresses):
+        """The _first method_ to run.
+        """
+        print('set_primary_sockets')
+        self.primary_addresses = addresses
+        if str(addresses[0][1]) == str(conf.BALANCE_PORT):
+            print('!! This is the balance port. No backpipe.')
+            return
+        parts = (addresses[0][0], conf.BALANCE_PORT,)
+        uri = 'ws://{}:{}/1111'.format(*parts)
+        # uri = 'ws://127.0.0.1:9004/1111'
+        await self._pipe.connect(uri)
+
+    async def backpipe_recv(self, message):
+        dlog(f'Backpipe: {message}')
+
+    async def startup(self, app):
+        """The _first method_ to run.
+        """
+        print('MOUNT')
+        uri = 'ws://127.0.0.1:9004/1111'
+
+    async def shutdown(self, app):
+        """The _first method_ to run.
+        """
+        print('SHUTDOWN')
+        uri = 'ws://127.0.0.1:9004/1111'
+        await self._pipe.close()
+        # self._pipe = await backpipe.connect(uri)
 
     async def websocket_accept(self, websocket, **extras):
         dlog(f'Websocket ingress {websocket}')
@@ -62,9 +97,12 @@ class Router(object):
         await websocket.accept()
         # Bind to the local register
         await live_register.add(websocket, _uuid)
+
+        await self._pipe.send(f'accepted: {_uuid}')
         # Turn on connections.
         await self.apply_auto_subscribed(websocket, token)
         # Return the ok. This is `True` to _enable waiting_.
+        #
         return accept
 
     async def apply_auto_subscribed(self, websocket, token):
@@ -75,12 +113,20 @@ class Router(object):
             await self.bind_socket_rooms(websocket, subscribed)
 
     async def recv_socket_event(self, websocket, data):
+        """The recv_socket_event method is the primary method for the
+        ingress, called when a (exterior) waiting socket dispatches data.
+
+        Wrap the data into an Envelope and call `dispatch()`
+        """
         dlog(f'Data {data}')
         msg = Envelope(data, websocket)
         await self.dispatch(websocket, msg)
         return msg.id
 
     async def websocket_disconnect(self, websocket, data):
+        """Called by the ingress, the websocket_disconnect method detaches
+        the socket from all internal graphs and removes one active token use.
+        """
         dlog('disconnect')
         # Tell the client pipe
         sid = websocket.socket_id
@@ -89,10 +135,7 @@ class Router(object):
         tokens.unuse_token(sid, websocket.token)#, extras['token'])
 
     async def dispatch(self, websocket, msg:Envelope):
-        # Pluck rooms
-
-
-        # convert the rooms to sockets
+        # convert the rooms to socket names
         allowed = await self.filter_allowed_destinations(websocket, msg)
         dlog(f'Send to {allowed}')
 
