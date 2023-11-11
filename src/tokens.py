@@ -42,7 +42,7 @@ TOKENS = {
 
     '1111': {
         'owner': 'user',
-        'max_connections': 3,
+        'max_connections': 6,
 
         'inherit_subscriptions': False,
         'auto_subscribe': True,
@@ -54,7 +54,6 @@ TOKENS = {
     },
 
 }
-
 
 
 class TokenCache:
