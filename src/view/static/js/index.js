@@ -1,5 +1,5 @@
 const URL = "127.0.0.1"
-    , PORT = 9004
+    , PORT = window.location.port
     , TOKEN = 1111
     ;
 
