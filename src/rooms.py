@@ -82,7 +82,6 @@ class Rooms(object):
         return room
 
 
-
 rooms = Rooms()
 
 async def remove_connection(socket_id):

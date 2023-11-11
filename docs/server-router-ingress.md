@@ -1,6 +1,9 @@
 # Server, Router, Ingress
 
-Porthouse is segemented by task within the server itself.
+
+One of the key design philosophies in our system is the fundamental decoupling of the ingress server from the router. This architecture choice ensures flexibility and scalability. It allows for the integration of alternative ingress points, potentially built with different frameworks or designed to handle other types of sockets.
+
+These alternative ingresses can seamlessly loop into and send messages to the same router, maintaining system consistency while expanding our capacity to handle diverse types of traffic and connections.
 
 
 ## Server
@@ -13,6 +16,9 @@ The server can be considered as the web-service for porthouse.
 
 
 ## Ingress
+
+- Acts as the main entry point for all external connections.
+- Handles both HTTP and WebSocket requests.
 
 The face of the server, accepting clients through websockets or other formats - such as udp, tcp,
 
@@ -29,3 +35,21 @@ The router accepts the message, discovers expecting sockets by passing the messa
 
 The messages appears at the other end as a functional call, perhaps to the same router - however the message may have been dispatched through a server pipe to another server.
 
+
+### Message Handling
+- Minimally manipulates incoming messages.
+- Wraps messages in an envelope.
+- Routes messages through "rooms" (similar to WebSocket channels).
+- Can present messages to connected sockets within rooms or pass them to other rooms.
+
+## `router.recv_socket_event` Function
+
+### Functionality
+- Activates when data is sent to the server via a WebSocket.
+- Wraps incoming data in an envelope.
+- Passes data to the router for distribution.
+
+## Asynchronous Processing
+
+- Ensures unique handling of each message, avoiding conflicts.
+- Handles messages asynchronously, allowing for efficient processing without data conflicts or concurrency issues.
