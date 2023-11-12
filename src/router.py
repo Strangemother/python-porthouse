@@ -20,59 +20,25 @@ targeted addresses.
 
 The outer shell manages throughput to other routers.
 """
+import uuid
+import asyncio
 
 from loguru import logger
 dlog = logger.debug
 
-from envelope import Envelope
-from register import live_register
 from rules import RuleSet, IPAddressRule, TokenRule
-import tokens, rooms
-
-import uuid
+from register import live_register
+from envelope import Envelope
 import config as conf
-
+import tokens
+import rooms
 import backpipe
-import asyncio
 
 
-class BackPipeMixin(object):
-    # Flagged True when applied by the async connect.
-    has_backpipe = False
-
-    def prepare_backpipe(self):
-        print('prepare_backpipe')
-        self._pipe = backpipe.BackPipe(self.backpipe_recv)
-        self.has_backpipe = True
-
-    async def start_backpipe(self, my_host=None, my_port=None):
-        balance_address = conf.BALANCE_ADDRESS
-        balance_port = str(balance_address[1])
-        token = 1111
-
-        if self.has_backpipe:
-            self._pipe.set_router_address((my_host, my_port,))
-
-        if my_port == balance_port:
-            print('!! This is the balance port. No backpipe.')
-            return
-
-        await self.connect_backpipe(*balance_address, token)
-
-    async def connect_backpipe(self, host, port, token=1111):
-        uri = 'ws://{}:{}/{}'.format(host, port, token)
-        await self._pipe.connect(uri)
-
-    async def backpipe_send(self, message):
-        if self.has_backpipe:
-            await self._pipe.send(message)
-
-
-class Router(BackPipeMixin):
+class Router(backpipe.BackPipeMixin):
 
     def __init__(self):
-        host = f'{conf.HOST}'#:{conf.PORT}'
-
+        host = f'{conf.HOST}' #:{conf.PORT}'
 
         self.access_rules = RuleSet(
                 IPAddressRule(host=host, check_port=False),
@@ -80,31 +46,28 @@ class Router(BackPipeMixin):
             )
         self.prepare_backpipe()
 
-
     async def set_primary_sockets(self, addresses):
         """The _first method_ to run.
         """
         self.primary_addresses = addresses
-        my_host = str(addresses[0][0])
-        my_port = str(addresses[0][1])
+
+        my_host, my_port = addresses[0]
         print('set_primary_sockets', my_host, my_port)
         if self.has_backpipe:
             await self.start_backpipe(my_host, my_port)
 
     async def backpipe_recv(self, message):
-        dlog(f'Backpipe: {message}')
+        dlog(f'RECV: "{message}"')
 
     async def startup(self, app):
         """The _first method_ to run.
         """
         print('MOUNT')
-        uri = 'ws://127.0.0.1:9004/1111'
 
     async def shutdown(self, app):
         """The _first method_ to run.
         """
         print('SHUTDOWN')
-        uri = 'ws://127.0.0.1:9004/1111'
         await self._pipe.close()
         # self._pipe = await backpipe.connect(uri)
 
@@ -130,6 +93,7 @@ class Router(BackPipeMixin):
         # Bind to the local register
         await live_register.add(websocket, _uuid)
 
+        dlog('Sending backpipe accept statement')
         await self.backpipe_send(f'accepted: {_uuid}')
         # Turn on connections.
         await self.apply_auto_subscribed(websocket, token)
