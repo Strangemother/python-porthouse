@@ -1,1 +1,1 @@
-./run-host-1.bat
+./run-host-1.bat %*
