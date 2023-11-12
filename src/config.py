@@ -5,4 +5,10 @@ RELOAD = DEBUG
 PORT = 0# 9004
 
 BALANCE_PORT = 9004
+BALANCE_ADDRESS = (HOST, BALANCE_PORT,)
 configured = False
+
+mb1 = 1024 * 1024
+mb16 = 16 * mb1
+
+WS_MAX_SIZE = mb1
