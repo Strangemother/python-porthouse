@@ -36,28 +36,60 @@ import backpipe
 import asyncio
 
 
-class Router(object):
+class BackPipeMixin(object):
+    # Flagged True when applied by the async connect.
+    has_backpipe = False
+
+    def prepare_backpipe(self):
+        print('prepare_backpipe')
+        self._pipe = backpipe.BackPipe(self.backpipe_recv)
+        self.has_backpipe = True
+
+    async def start_backpipe(self, my_host=None, my_port=None):
+        balance_address = conf.BALANCE_ADDRESS
+        balance_port = str(balance_address[1])
+        token = 1111
+
+        if self.has_backpipe:
+            self._pipe.set_router_address((my_host, my_port,))
+
+        if my_port == balance_port:
+            print('!! This is the balance port. No backpipe.')
+            return
+
+        await self.connect_backpipe(*balance_address, token)
+
+    async def connect_backpipe(self, host, port, token=1111):
+        uri = 'ws://{}:{}/{}'.format(host, port, token)
+        await self._pipe.connect(uri)
+
+    async def backpipe_send(self, message):
+        if self.has_backpipe:
+            await self._pipe.send(message)
+
+
+class Router(BackPipeMixin):
+
     def __init__(self):
         host = f'{conf.HOST}'#:{conf.PORT}'
-        self._pipe = backpipe.BackPipe(self.backpipe_recv)
+
 
         self.access_rules = RuleSet(
                 IPAddressRule(host=host, check_port=False),
                 TokenRule(param='token'),
             )
+        self.prepare_backpipe()
+
 
     async def set_primary_sockets(self, addresses):
         """The _first method_ to run.
         """
-        print('set_primary_sockets')
         self.primary_addresses = addresses
-        if str(addresses[0][1]) == str(conf.BALANCE_PORT):
-            print('!! This is the balance port. No backpipe.')
-            return
-        parts = (addresses[0][0], conf.BALANCE_PORT,)
-        uri = 'ws://{}:{}/1111'.format(*parts)
-        # uri = 'ws://127.0.0.1:9004/1111'
-        await self._pipe.connect(uri)
+        my_host = str(addresses[0][0])
+        my_port = str(addresses[0][1])
+        print('set_primary_sockets', my_host, my_port)
+        if self.has_backpipe:
+            await self.start_backpipe(my_host, my_port)
 
     async def backpipe_recv(self, message):
         dlog(f'Backpipe: {message}')
@@ -98,11 +130,10 @@ class Router(object):
         # Bind to the local register
         await live_register.add(websocket, _uuid)
 
-        await self._pipe.send(f'accepted: {_uuid}')
+        await self.backpipe_send(f'accepted: {_uuid}')
         # Turn on connections.
         await self.apply_auto_subscribed(websocket, token)
         # Return the ok. This is `True` to _enable waiting_.
-        #
         return accept
 
     async def apply_auto_subscribed(self, websocket, token):
