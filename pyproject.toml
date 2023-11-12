@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=40.6.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "porthouse"
+version = "0.2.1"
+description = "Websocket mesh"
+authors = [{name = "Porthouse", email = "porthouse@strangemother.com"}]
+license =  {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["websockets", "mesh"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dynamic = ["dependencies"]
+# dependencies = [
+#     # "fastapi",
+#     # 'loguru',
+#     # 'websockets',
+# ]
+
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+optional-dependencies = {dev = { file = ["requirements-dev.txt"] }}
+# dynamic = ["version"]
+
+# Optional: If you have any package data or scripts to include
+# [tool.setuptools]
+# packages = { find = { include = ["src"] } }
+
+# [tool.setuptools]
+# packages = ["src/porthouse"]
+
+# [tool.setuptools.packages.find]
+# where = ["src"]  # the package is in src/toto/ now
+
+# include_package_data = true
+# scripts = [
+    # Scripts to include
+# ]
+
+# [project.optional-dependencies]
+# pdf = ["ReportLab>=1.2", "RXP"]
+# rest = ["docutils>=0.3", "pack ==1.1, ==1.3"]
+
+# [project.scripts]
+# my-script = "my_package.module:function"
+
+# ... other project metadata fields as specified in:
+#     https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
