@@ -1,1 +1,0 @@
-./run-host-1.bat %*

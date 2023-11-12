@@ -7,7 +7,7 @@ accept, else ditch and msg the client.
 from loguru import logger
 dlog = logger.debug
 
-import tokens
+from . import tokens
 
 class Rule(object):
 

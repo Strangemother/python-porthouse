@@ -4,22 +4,28 @@
 
 """
 import asyncio
-import uvicorn
-from fastapi import FastAPI
 from pathlib import Path
 
-import config as conf_module
-from ingress import app
-from primary import router
+import uvicorn
+from fastapi import FastAPI
+
+from . import config as conf_module
+from .ingress import app
+from .primary import router
 
 HERE = Path(__file__).parent.as_posix()
 
 
-async def main():
+def async_server(**kw):
+    debug = kw.pop('debug', False)
+    asyncio.run(main(**kw), debug=debug)
+
+
+async def main(**kw):
     """
     python -m uvicorn ingress:app --host 127.0.0.1 --port 9004  --reload
     """
-    config = get_config(app) # "ingress:app"
+    config = get_config(app, kw) # "ingress:app"
     task = await start_server_task(config)
     # return await run_default_server(config)
     ## Ensure to wait for the task.
@@ -42,7 +48,6 @@ def get_config(target, config=None):
             use_colors=False,
             ws_max_size=conf_module.WS_MAX_SIZE,
         )
-
     new_conf.update(_conf)
     c = uvicorn.Config(target, **new_conf)
     return c
@@ -106,5 +111,5 @@ async def get_socket_names(server):
 
 
 if __name__ == "__main__":
-    asyncio.run(main(), debug=True)
+    async_server(debug=True)
 

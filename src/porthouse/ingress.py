@@ -11,9 +11,9 @@ from fastapi import Request
 from loguru import logger
 dlog = logger.debug
 
-import config as conf
-import index_page
-import primary
+from . import config as conf
+from . import index_page
+from . import primary
 
 
 app = FastAPI(host=conf.HOST, debug=conf.DEBUG, lifespan=primary.lifespan)

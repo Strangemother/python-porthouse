@@ -30,7 +30,7 @@ import gc
 from collections import defaultdict
 import uuid
 
-import rooms
+from . import rooms
 
 
 CONNECTIONS = {

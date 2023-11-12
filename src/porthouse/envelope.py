@@ -1,4 +1,5 @@
 import uuid
+import re
 
 
 class Envelope(object):
@@ -20,7 +21,6 @@ class Envelope(object):
         text = self.content['text']
         return parse_destination(text)
 
-import re
 
 def parse_destination(text, key='destination'):
     """Collect the assignments within the text for the

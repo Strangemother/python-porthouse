@@ -26,13 +26,13 @@ import asyncio
 from loguru import logger
 dlog = logger.debug
 
-from rules import RuleSet, IPAddressRule, TokenRule
-from register import live_register
-from envelope import Envelope
-import config as conf
-import tokens
-import rooms
-import backpipe
+from .rules import RuleSet, IPAddressRule, TokenRule
+from .register import live_register
+from .envelope import Envelope
+from . import config as conf
+from . import tokens
+from . import rooms
+from . import backpipe
 
 
 class Router(backpipe.BackPipeMixin):
