@@ -1,3 +1,7 @@
+"""Ingress
+
+The ingress is the externally accessible frontend for the incoming connections.
+"""
 import asyncio
 from contextlib import asynccontextmanager
 
