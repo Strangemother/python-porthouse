@@ -1,5 +1,14 @@
+"""The BackPipe
+
+A Backpipe is a Router's dedicated connect to another router. Other
+routers may connect to this backpipe for ferrying messages between peers.
+
+The router created a pipe when the server is connected. If the backpipe connect
+connect, it assumes no back connection.
+"""
 import asyncio
 from websockets import connect as w_connect
+from websockets.exceptions import ConnectionClosedError
 
 class BackPipe(object):
 
@@ -7,6 +16,7 @@ class BackPipe(object):
         self.queue = asyncio.Queue()
         self.socket = None
         self.response_handler = response_handler
+        self.router_address = None
 
     async def async_queue_put(self, data):
         return self.queue_put(data)
@@ -15,18 +25,33 @@ class BackPipe(object):
         self.queue.put_nowait(data)
 
     async def close(self):
-        await self.socket.close()
+        if self.socket:
+            await self.socket.close()
         await asyncio.sleep(0)  # yield control to the event loop
 
-    async def connect(self, uri):
+    def set_router_address(self, address:tuple):
+        self.router_address = address
+
+    async def connect(self, uri, raise_disconnect=False):
         print('Connecting backpipe to', uri)
-        self.socket = await w_connect(uri)
-        # await handler(self.socket, self.consume, self.producer_handler)
+        try:
+            self.socket = await w_connect(uri)
+        except ConnectionRefusedError:
+            print('Cannot connect to backpipe - connection refused')
+            return None
+
         await self.send_wake()
-        # self.queue_put('Hello.')
+
         await asyncio.sleep(0)  # yield control to the event loop
         # await self.producer_handler(self.socket)
-        await self.consume(self.socket)
+        try:
+            await self.consume(self.socket)
+        except ConnectionClosedError as exc:
+            print('Backpipe closed:', exc)
+            if self.socket:
+                await self.socket.close()
+            if raise_disconnect:
+                raise exc
 
         return self.socket
 
@@ -34,6 +59,7 @@ class BackPipe(object):
         async for message in websocket:
             # print('BackPipe message', message)
             await self.response_handler(message)
+            await asyncio.sleep(0)
             # await websocket.send('Thank you.')
 
     async def producer_handler(self, websocket):
@@ -46,13 +72,16 @@ class BackPipe(object):
 
 
     async def send_wake(self):
-        message = 'Hello.'
+        """Send the _wake word_ as a message to the peer.
+        """
+        message = 'Hello from {}'.format(self.router_address)
         print('Sending wake word.')
         await self.send(message)
 
     async def send(self, data):
         if self.socket:
             await self.socket.send(data)
+
 
 # pipe = BackPipe()
 
