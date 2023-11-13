@@ -48,8 +48,8 @@ optional-dependencies = {dev = { file = ["requirements-dev.txt"] }}
 # pdf = ["ReportLab>=1.2", "RXP"]
 # rest = ["docutils>=0.3", "pack ==1.1, ==1.3"]
 
-# [project.scripts]
-# my-script = "my_package.module:function"
+[project.scripts]
+porthouse = "porthouse.cli:run"
 
 # ... other project metadata fields as specified in:
 #     https://packaging.python.org/en/latest/specifications/declaring-project-metadata/

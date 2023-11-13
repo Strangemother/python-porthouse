@@ -20,17 +20,6 @@ Replicating the old bridge system:
     + Sending messages to other servers through a custom bridge
 
 
-## What is it.
-
-Secretly under-the-hood this is a
-
-## Auth
-
-A user must own a User object
-
-+ Must have an account
-    + Keep their session ID
-
 
 ### Endpoints
 
