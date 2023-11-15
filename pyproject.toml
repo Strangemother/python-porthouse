@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "porthouse"
 version = "0.2.2"
 description = "Websocket mesh"
-authors = [{name = "Porthouse", email = "porthouse@strangemother.com"}]
+authors = [{name = "Strangemother", email = "porthouse@strangemother.com"}]
 license =  {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.8"
