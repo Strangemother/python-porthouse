@@ -2,6 +2,9 @@
 
     py run.py
 
+This starts a new server and loads the `ingress` app.
+
+    run -> ingress -> ...
 """
 import asyncio
 from pathlib import Path

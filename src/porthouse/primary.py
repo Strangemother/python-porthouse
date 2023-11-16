@@ -1,4 +1,9 @@
 """The "primary" is the access module to a running _router_.
+This acts as the 'primary' receiver for an ingress, acting as the stepping-stone
+into a router.
+
+    run -> ingress -> primary -> router -> ...
+
 Generally an ingress call upon `primary_ingress` to accept and loop listen to
 websockets.
 
@@ -27,9 +32,11 @@ dlog = logger.debug
 from .router import Router
 from . import config as conf
 from . import index_page
+from . import adapters
 
 
 router = Router()
+adapter = adapters.get_adapter('starlette', router)
 
 
 def generate_typemap():
@@ -47,7 +54,7 @@ async def lifespan(app: FastAPI):
     dlog('lifespan Startup')
     # await asyncio.sleep(3)
     # dlog('lifespan Startup - mount')
-    await router.startup(app)
+    await router.startup(app, adapter='starlette')
     yield
     dlog('lifespan shutdown')
     await router.shutdown(app)
@@ -61,11 +68,13 @@ async def primary_ingress(websocket, **kw):
     websocket._ok = await router.websocket_accept(websocket, **kw)
 
     while websocket._ok:
-        data = await websocket.receive()
+        # data = await router.receive()
+        data = await adapter.wait_receive(websocket)
         ok = await handle_message(websocket, data)
     else:
         if websocket.client_state.value == 1:  # websocket.CONNECTED
-            await websocket.close()
+            # await websocket.close()
+            await adapter.close(websocket)
 
 
 async def handle_message(websocket, data):

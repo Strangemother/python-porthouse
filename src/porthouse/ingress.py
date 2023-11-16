@@ -1,6 +1,9 @@
 """Ingress
 
-The ingress is the externally accessible frontend for the incoming connections.
+The ingress is the externally accessible frontend for the incoming connections,
+initiated or called upon by a runner such as uvicorn.
+
+    run -> ingress -> primary -> ...
 """
 import asyncio
 from contextlib import asynccontextmanager
