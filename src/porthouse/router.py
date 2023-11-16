@@ -33,17 +33,21 @@ from . import config as conf
 from . import tokens
 from . import rooms
 from . import backpipe
+from . import adapters
 
 
 class Router(backpipe.BackPipeMixin):
+    adapter_class = None
 
-    def __init__(self):
+    def __init__(self, adapter=None):
         host = f'{conf.HOST}' #:{conf.PORT}'
+        self.adapter_class = self.resolve_adapter(adapter) if adapter else None
 
         self.access_rules = RuleSet(
                 IPAddressRule(host=host, check_port=False),
                 TokenRule(param='token'),
             )
+
         self.prepare_backpipe()
 
     async def set_primary_sockets(self, addresses):
@@ -57,12 +61,25 @@ class Router(backpipe.BackPipeMixin):
             await self.start_backpipe(my_host, my_port)
 
     async def backpipe_recv(self, message):
+        """A message from the _backpipe_.
+        """
         dlog(f'RECV: "{message}"')
 
-    async def startup(self, app):
+    async def startup(self, app, adapter):
         """The _first method_ to run.
         """
+        self.adapter_class = self.resolve_adapter(adapter)
         print('MOUNT')
+
+    def resolve_adapter(self, pointer):
+        """If the given pointer is a string, resolve from the
+        possible adapters.
+
+        Return a class.
+        """
+        if isinstance(pointer, str):
+            return adapters.get_adapter(pointer, self)
+        return pointer
 
     async def shutdown(self, app):
         """The _first method_ to run.
@@ -71,25 +88,31 @@ class Router(backpipe.BackPipeMixin):
         await self._pipe.close()
         # self._pipe = await backpipe.connect(uri)
 
-    async def websocket_accept(self, websocket, **extras):
+    async def websocket_can_accept(self, websocket, **extras) -> bool:
+        extras.setdefault('uuid', str(uuid.uuid4()))
+        accept = self.access_rules.is_valid(websocket, **extras)
+        return accept
+
+    async def websocket_accept(self, websocket, **extras) -> bool:
         dlog(f'Websocket ingress {websocket}')
         _uuid = str(uuid.uuid4())
         extras.setdefault('uuid', _uuid)
 
-        accept = self.access_rules.is_valid(websocket, **extras)
-
-        if accept is False:
-            return accept
-
-        token = extras['token']
-        ok = tokens.use_token(_uuid, token)
-        if ok is False:
-            dlog('tokens.use_token failed.')
+        if await self.websocket_can_accept(websocket, **extras) is False:
             return False
 
-        websocket.token = token
+        token = extras['token']
+        ok = self.use_token(websocket, _uuid, token)
+        if ok is False: return False
+
         # Ensure to call as fast as possible.
         await websocket.accept()
+
+        accept = await self.websocket_onboard( websocket, _uuid, token)
+        # Return the ok. This is `True` to _enable waiting_.
+        return accept
+
+    async def websocket_onboard(self, websocket, _uuid, token) -> bool:
         # Bind to the local register
         await live_register.add(websocket, _uuid)
 
@@ -98,7 +121,14 @@ class Router(backpipe.BackPipeMixin):
         # Turn on connections.
         await self.apply_auto_subscribed(websocket, token)
         # Return the ok. This is `True` to _enable waiting_.
-        return accept
+        return True
+
+    def use_token(self, websocket, _uuid, token):
+        ok = tokens.use_token(_uuid, token)
+        if ok is False:
+            dlog('tokens.use_token failed.')
+            return False
+        websocket.token = token
 
     async def apply_auto_subscribed(self, websocket, token):
         # if auto_subscribe, bind to rooms.
