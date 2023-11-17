@@ -5,16 +5,23 @@
 This starts a new server and loads the `ingress` app.
 
     run -> ingress -> ...
+
+---
+
+Functionally this simply _runs `uvicorn`_ without the config overhead. All options
+are applied within the arguments
 """
 import asyncio
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI
 
 from . import config as conf_module
-from .ingress import app
+from .arguments import uvicorn_conf
 from .primary import router
+from .ingress import app
+from . import arguments
+
 
 HERE = Path(__file__).parent.as_posix()
 
@@ -28,14 +35,17 @@ async def main(**kw):
     """
     python -m uvicorn ingress:app --host 127.0.0.1 --port 9004  --reload
     """
-    config = get_config(app, kw) # "ingress:app"
+    print(kw)
+    await router.set_system_config(kw) # The _raw_ config,
+    config = get_config(kw) # "ingress:app"
+    # config = get_config(app, kw) # "ingress:app"
     task = await start_server_task(config)
     # return await run_default_server(config)
     ## Ensure to wait for the task.
     await task
 
 
-def get_config(target, config=None):
+def get_config(config=None):
     """Given a target app, Create and return a uvicorn Config object.
 
         get_config()
@@ -43,16 +53,23 @@ def get_config(target, config=None):
     The real source: site-packages/uvicorn/config.py
     """
     _conf = config or {}
-    new_conf = dict(host=conf_module.HOST,
+    defaults = dict(host=conf_module.HOST,
             port=conf_module.PORT,
-            log_level="info",
+            log_level=conf_module.LOG_LEVEL,
             reload=conf_module.RELOAD,
             reload_dirs=[HERE],
             use_colors=False,
             ws_max_size=conf_module.WS_MAX_SIZE,
+            target=conf_module.INGRESS_APP,
         )
-    new_conf.update(_conf)
-    c = uvicorn.Config(target, **new_conf)
+
+    arg_items = arguments.get_parsed_args().items()
+    wanted = tuple(uvicorn_conf.UVICORN_CONF_ALLOWED.keys()) + ('target',)
+    defaults.update({x:y for x,y in _conf.items() if x in wanted})
+    # defaults.update(_conf)
+    print(defaults)
+    target = defaults.pop('target')
+    c = uvicorn.Config(target, **defaults)
     return c
 
 
