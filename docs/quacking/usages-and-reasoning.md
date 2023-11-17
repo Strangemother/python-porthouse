@@ -43,6 +43,18 @@ On the surface `porthouse` aims to be agnostic to requirements, connected by any
 + multi user file editor (training students.)
 + sms gateway
     thtough api or android
++ file list aggregations across devices
++ system to system audio stream
+    I have no clue how to do this, it'll be fun to find out.
++ remote keyboard mouse
++ VLC remote and other remote controls (prkeyboard)
+
+## Marketplace.
+
+A tooling to install and use community driven addons; such as agent toys or ping testing.
+They should be installed with structured parameters, such that automated testing can evaluate how the module
+intergrates. Given a tight enough solution - these addon modules can be tested in the same method as the entire suite; for both developer _code coverage_ awareness, and future porthouse (system) upgrades.
+
 
 ### IoT
 
