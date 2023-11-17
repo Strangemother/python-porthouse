@@ -48,7 +48,19 @@ class Router(backpipe.BackPipeMixin):
                 TokenRule(param='token'),
             )
 
-        self.prepare_backpipe()
+
+    async def set_system_config(self, namespace_dict):
+        """Assign a large config object given from the system at
+        setup.
+        This is likely called before the server is awake (before the primary
+        sockets are applied).
+
+        Produced by converting the namespace and any extended config to a dict.
+        """
+        k = tuple(namespace_dict.keys())
+        dlog(f'apply namespace dict (keys): {k}')
+        self._system_config = namespace_dict
+        self.prepare_backpipe(ports=namespace_dict.get('balance_ports'))
 
     async def set_primary_sockets(self, addresses):
         """The _first method_ to run.
