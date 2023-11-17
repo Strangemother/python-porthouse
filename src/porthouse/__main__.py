@@ -4,8 +4,8 @@
 
 """
 
-def main():
-    print('__main__::main')
+from .boot import main_run as main
+
 
 if __name__ == '__main__':
     main()
