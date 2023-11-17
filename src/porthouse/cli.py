@@ -1,8 +1,1 @@
-
-import arguments
-
-
-def run():
-    print('cli run')
-    res = arguments.get_args()
-    print(f'{res=}')
+from .boot import cli_run as run
