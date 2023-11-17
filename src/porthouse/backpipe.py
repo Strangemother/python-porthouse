@@ -22,13 +22,18 @@ class BackPipeMixin(object):
     # Flagged True when applied by the async connect.
     has_backpipe = False
 
-    def prepare_backpipe(self):
-        print('prepare_backpipe')
-        self._pipe = BackPipe(self.backpipe_recv)
+    def prepare_backpipe(self, host=None, ports=None):
         self.has_backpipe = True
+        self._ports = ports or conf.BALANCE_PORTS
+        self._host = host or conf.HOST
+        dlog('prepare_backpipe: {ports}', ports=self._ports)
+        self._pipe = BackPipe(self.backpipe_recv)
 
     async def start_backpipe(self, my_host=None, my_port=None):
-        balance_address = conf.BALANCE_ADDRESSES
+        ports = self._ports or ()
+
+        balance_address = (self._host, ports) # ('ip', (port, port,...))
+        dlog(balance_address)
         balance_port = str(balance_address[1])
         token = 1111
 
@@ -110,8 +115,9 @@ class BackPipe(object):
             socket = await w_connect(uri)
             _uuid = str(uuid.uuid4())
             socket.socket_id = _uuid
+            dlog(f'Backpipe connected ({socket.port}): {uri}')
         except ConnectionRefusedError:
-            dlog('Cannot connect to backpipe - connection refused')
+            dlog(f'Cannot connect to backpipe: {uri} - connection refused')
             return None
 
         await self.send_wake(socket)
@@ -133,7 +139,8 @@ class BackPipe(object):
 
     async def consume(self, websocket):
         async for message in websocket:
-            dlog('BackPipe message from {id}', id=websocket.socket_id)
+            #id=websocket.socket_id
+            dlog('BackPipe message from {id}', id=websocket.port)
             await self.response_handler(message)
             await asyncio.sleep(0)
             # await websocket.send('Thank you.')
