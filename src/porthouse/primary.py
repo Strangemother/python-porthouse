@@ -29,14 +29,19 @@ from fastapi import WebSocket, FastAPI, Request
 from loguru import logger
 dlog = logger.debug
 
-from .router import Router
+from .router import Router, CommandRouter#, RouterPipe
 from . import config as conf
 from . import index_page
 from . import adapters
 
 
-router = Router()
+command_router = CommandRouter()
+router = Router(command_router=command_router)
 adapter = adapters.get_adapter('starlette', router)
+command_adapter = adapters.get_adapter('starlette', command_router)
+
+
+# router_pipe = RouterPipe(command_router=command_router, router=router)
 
 
 @asynccontextmanager
@@ -68,3 +73,23 @@ async def primary_ingress(websocket, **kw):
         # if websocket.client_state.value == 1:  # websocket.CONNECTED
         #     # await websocket.close()
         #     await adapter.close(websocket)
+
+
+async def command_ingress(websocket, **kw):
+    """The `command_ingress` accepts _administrators_ for a porthouse cluster -
+    a client owning all sub connections.
+
+    This socket is an event channel socket.
+
+    For this socket we _Accept_ and expect the first messages to be authentication.
+    If pass, the client can send and receive debug messages.
+
+    In the first draft this can be JSON (as it's easy.)
+    """
+    websocket._ok = await command_adapter.websocket_accept(websocket, **kw)
+
+    while websocket._ok:
+        data = await command_adapter.wait_receive(websocket)
+        ok = await command_adapter.handle_command_message(websocket, data)
+    else:
+        await command_adapter.wait_exit(websocket)
