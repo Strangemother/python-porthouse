@@ -29,3 +29,9 @@ index_page.mount_jinja_home(app, index_template='index.html')
 async def websocket_endpoint_primary(websocket: WebSocket,token=None):
     dlog('Websocket on primary port.')
     await primary.primary_ingress(websocket, token=token)
+
+
+@app.websocket("/commander/{token}")
+async def websocket_endpoint_commander(websocket: WebSocket,token=None):
+    dlog('Websocket on primary port.')
+    await primary.command_ingress(websocket, token=token)
