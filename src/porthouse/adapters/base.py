@@ -45,6 +45,12 @@ class Adapter(object):
     def validate_accept(self, websocket, **extras):
         return self.router.access_rules.is_valid(websocket, **extras)
 
+    async def handle_command_message(self, websocket, data):
+        """A Message as a _command_ for the router state. This socket
+        may also accept command events.
+        """
+        return await self.handle_message(websocket, data)
+
     async def handle_message(self, websocket, data):
         """Given a socket and the new message, read the `type` of message
         and call the `typemap` handler function. If no function is found use
