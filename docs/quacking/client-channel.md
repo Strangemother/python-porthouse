@@ -1,4 +1,11 @@
-# Client Channel
+# ~Client Channel~ The Freeport.
+
+> Designated the "Freeport" - Allowing a user to own a freeport of their information - The Freeport of Terry.
+
++ Every user has a freeport; it hosts all their account messages
++ They connect when required
++ It has no history, only _current_ events.
++ This is the users command-channel
 
 Aside from the standard _rooms_ a client may generate, the client has their own _room_ by default. This is semi-transient, in which the room is always allocated to them, and all client items may connect to their room - but it doesn't exist as a waiting room. Thus history and other users are not applicable.
 

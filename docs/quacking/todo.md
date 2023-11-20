@@ -1,3 +1,19 @@
+## 2023/11/19
+
+### Command Pipe
+
+Build a _command pipe_ for admin and client (Above siblings and sockets). Allowing
+the administration of a router and a group of rooms by an owner.
+
++ Implement the token acceptance API.
+    + This is a _tokens_ service.
+        It could by any type; such as a local db. At the moment a microservice is easiest.
+    + It needs a command tool
+
++ Implement an api endpoint for tokens, rooms, and user information
+allowing the router to gather information. First version - json calls?
+
+
 ## Note (After Below)
 
 + Should implement django async views for socket integration.
