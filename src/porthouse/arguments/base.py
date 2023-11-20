@@ -20,9 +20,11 @@ def get_parser():
                 default=conf_module.LOG_LEVEL,
                 help='log level'
                 )
+
     installer.apply_subparsers(parser)
     parser = apply_secret_options(parser, help=argparse.SUPPRESS)
     return parser
+
 
 def get_pre_parser():
     parser = argparse.ArgumentParser(prog='Porthouse Secret Parser',

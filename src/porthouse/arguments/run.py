@@ -25,6 +25,13 @@ def run_command(namespace):
     porthouse_run.async_server(**vars(namespace))
 
 
+
+class Helps:
+    routing_method = 'Assign how the messages are dispatched within the router. default: "%(default)s"'
+    log_level = 'set the application logging level default: "%(default)s"'
+    balance_ports = f'Balance Ports - default: "{conf.BALANCE_PORTS}"'
+
+
 def run_command_hook(subparsers):
 
     run_parser = subparsers.add_parser('run', aliases=('r',), help='Run')
@@ -54,13 +61,21 @@ def run_command_hook(subparsers):
             # action='store',
             type=int,
             default=None,
-            help=f'Balance Ports - default: "{conf.BALANCE_PORTS}"',
+            help=Helps.balance_ports,
         )
-    add('--log-level',
+
+    add('--router-log-level',
         action='store',
         default=conf.LOG_LEVEL,
-        help='log level'
+        help=Helps.log_level
         )
+
+    add('-r', '--routing-method',
+        action='store',
+        default='supercast',
+        help=Helps.routing_method
+        )
+
     return run_parser
 
 
