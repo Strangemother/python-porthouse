@@ -11,7 +11,7 @@ BALANCE_ADDRESSES = (HOST, BALANCE_PORTS, )
 
 INGRESS_APP = 'porthouse.ingress:app'
 
-
+ROUTING = 'supercast'
 
 mb1 = 1024 * 1024
 mb16 = 16 * mb1
