@@ -29,7 +29,7 @@ def cli_run():
 
     print_banner(args)
 
-    level = args.log_level.upper()
+    level = args.router_log_level.upper()
     # global configure.
     logger.configure(handlers=[{"sink": sys.stdout, "level": level}])
 
@@ -39,6 +39,9 @@ def cli_run():
     dlog('-- end -- ')
     # run.async_server(**vars(args))
 
+
+if __name__ == '__main__':
+    main_run()
 ## future
 #
 # jupyter run
