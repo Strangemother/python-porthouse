@@ -19,7 +19,24 @@ class StarletteAdapter(Adapter):
             'default': self.default_action,
         }
 
-    async def handle_message(self, websocket, data):
+    async def handle_command_message(self, websocket, data):
+        """A Message as a _command_ for the router state. This socket
+        may also accept command events.
+        """
+        return await self.handle_message(websocket, data, default=self.recv_socket_command)
+
+    async def recv_socket_command(self, websocket, data):
+        """The function to handle a socket message from the admin ingress.
+        This should route with a flag for allowing changes.
+        """
+        receipt = await self.router.recv_socket_event(websocket, data)
+        # 'send', 'send_bytes', 'send_json', 'send_text',
+        if receipt is not None:
+            # primarily JSON for now.
+            await websocket.send_json({'receipt': receipt})
+        return 1
+
+    async def handle_message(self, websocket, data, default=None):
         """Given a socket and the new message, read the `type` of message
         and call the `typemap` handler function. If no function is found use
         the `default_action` function.
@@ -28,7 +45,9 @@ class StarletteAdapter(Adapter):
 
         Return an `ok` truthy. `0` for _not ok_, `1` for okay.
         """
-        action_func = self.typemap.get(data['type'], None) or self.typemap['default']
+        if default is None:
+            default = self.typemap['default']
+        action_func = self.typemap.get(data['type'], None) or default
         ok = await action_func(websocket, data)
         return ok
 
