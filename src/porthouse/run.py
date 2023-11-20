@@ -26,12 +26,38 @@ from . import arguments
 HERE = Path(__file__).parent.as_posix()
 
 
+import sys
+from types import ModuleType
+
+class VerboseModule(ModuleType):
+    # def __repr__(self):
+    #     return f'Verbose {self.__name__}'
+
+    def __call__(self, *a, **kw):
+        print('Module called.')
+
+    # def __setattr__(self, attr, value):
+    #     print(f'Setting {attr}...')
+    #     super().__setattr__(attr, value)
+
+    # # def __getattr__(self, attr):
+
+    # def __getattribute__(self, attr):
+    #     print(f'Getting {attr}...')
+    #     if attr == 'Woof':
+    #         return Woof
+    #     return super().__getattribute__(attr)
+
+
+sys.modules[__name__].__class__ = VerboseModule
+
+
 def async_server(**kw):
     debug = kw.pop('debug', False)
     asyncio.run(main(**kw), debug=debug)
 
 
-async def main(**kw):
+async def main(await_task=True, **kw):
     """
     python -m uvicorn ingress:app --host 127.0.0.1 --port 9004  --reload
     """
@@ -42,7 +68,9 @@ async def main(**kw):
     task = await start_server_task(config)
     # return await run_default_server(config)
     ## Ensure to wait for the task.
-    await task
+    if await_task:
+        await task
+    return task
 
 
 def get_config(config=None):
