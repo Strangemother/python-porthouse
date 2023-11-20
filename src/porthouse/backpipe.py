@@ -21,6 +21,7 @@ dlog = logger.debug
 class BackPipeMixin(object):
     # Flagged True when applied by the async connect.
     has_backpipe = False
+    backpipe_token = 9999
 
     def prepare_backpipe(self, host=None, ports=None):
         self.has_backpipe = True
@@ -35,7 +36,7 @@ class BackPipeMixin(object):
         balance_address = (self._host, ports) # ('ip', (port, port,...))
         dlog(balance_address)
         balance_port = str(balance_address[1])
-        token = 1111
+
 
         if self.has_backpipe:
             self._pipe.set_router_address((my_host, my_port,))
@@ -44,15 +45,21 @@ class BackPipeMixin(object):
             print('!! This is the balance port. No backpipe.')
             return
 
-        await self.connect_backpipe(*balance_address, token)
+        if self.has_backpipe:
+            await self.connect_backpipe(*balance_address)
         # await self.connect_backpipe(*balance_address, token)
 
-    async def connect_backpipe(self, host, ports, token=1111):
+    async def connect_backpipe(self, host, ports, token=None):
         uris = ()
         for port in ports:
+            if token is None:
+                token = self.get_backpipe_token(host,port)
             uri = 'ws://{}:{}/{}'.format(host, port, token)
             uris += (uri,)
         await self._pipe.connect_many(uris, listen=True)
+
+    def get_backpipe_token(self, host,port):
+        return self.backpipe_token
 
     async def backpipe_send(self, message):
         if self.has_backpipe:
@@ -66,7 +73,23 @@ class BackPipeMixin(object):
 
 
 class BackPipe(object):
+    """The `Backpipe` class is a self-contained bi-directional multiplex
+    communications port, alloing a list of websockets _outbound_ from the "back"
+    of the server.
 
+    To initiate, provide a `response_handler` function, to accept messages into
+    a controller:
+
+        async def callback(message, socket):
+            ...
+
+        bp = Backpipe(callback)
+
+    When prepared, call the `connect` method:
+
+        uris = ["ws://..", "ws://..", ...]
+        await bp.connect(uris, raise_disconnect=True)
+    """
     def __init__(self, response_handler):
         # self.queue = asyncio.Queue()
         self.socket = None
@@ -95,6 +118,17 @@ class BackPipe(object):
         return await self.connect_many(uri, raise_disconnect)
 
     async def connect_many(self, uris, raise_disconnect=False, listen=True):
+        """Perform `connect_watch` for a list of uris.
+
+            uris = ['ws://...', 'ws://...']
+            self.connect_many(uris, raise_disconnect=False, listen=True)
+
+        Is synonymous to:
+
+            socket_1 = await self.connect_watch(uri[1], raise_disconnect, listen)
+            socket_2 = await self.connect_watch(uri[2], raise_disconnect, listen)
+
+        """
         dlog('Connecting to many backpipes', uris)
         sockets = ()
         for uri in uris:
@@ -111,6 +145,14 @@ class BackPipe(object):
         return sockets
 
     async def connect_watch(self, uri, raise_disconnect=False, listen=True):
+        """Connect to the given websocket `uri`. Dope the socket with a
+        new socket_id and send a wake message. Finally create a new task to wait
+        for new messages.
+
+            socket = await self.connect_watch(uri, raise_disconnect=False, listen=True)
+
+        Return the connected socket, whilst awaiting for messages.
+        """
         try:
             socket = await w_connect(uri)
             _uuid = str(uuid.uuid4())
@@ -127,7 +169,12 @@ class BackPipe(object):
             asyncio.create_task(self.consume_task(socket, raise_disconnect))
         return socket
 
-    async def consume_task(self, socket, raise_disconnect):
+    async def consume_task(self, socket, raise_disconnect=True):
+        """The _consume_ method, setup as a `task` executor to list for incoming
+        messages:
+
+            asyncio.create_task(self.consume_task(socket, raise_disconnect=True))
+        """
         try:
             await self.consume(socket)
         except ConnectionClosedError as exc:
@@ -138,10 +185,17 @@ class BackPipe(object):
                 raise exc
 
     async def consume(self, websocket):
+        """Async wait upon the websocket for message. call `response_handler`
+        for every message received.
+
+        This method is async blocking. To circumvent this call the function as
+        a new task
+
+            asyncio.create_task(self.consume_task(socket, raise_disconnect))
+        """
         async for message in websocket:
-            #id=websocket.socket_id
             dlog('BackPipe message from {id}', id=websocket.port)
-            await self.response_handler(message)
+            await self.response_handler(message, websocket)
             await asyncio.sleep(0)
             # await websocket.send('Thank you.')
 
