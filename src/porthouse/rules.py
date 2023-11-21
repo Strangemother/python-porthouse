@@ -12,6 +12,7 @@ from . import tokens
 class Rule(object):
 
     check_port = True
+
     def __init__(self, **extras):
         self.__dict__.update(**extras)
 
@@ -33,7 +34,7 @@ class TokenRule(Rule):
 
     async def is_valid(self, websocket, **extras):
         token = extras.get(self.param, None)
-        exists = await tokens.exists(token)
+        exists = await self.tokens.exists(token)
         return exists
 
 

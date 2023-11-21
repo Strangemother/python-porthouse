@@ -74,12 +74,15 @@ class Router(backpipe.BackPipeMixin):
         self.tell_command = TellCommand()
 
         self.rooms = rooms.Rooms()
+        self.tokens = tokens.Tokens()
+
         self.adapter_class = self.resolve_adapter(adapter) if adapter else None
         self.access_rules = RuleSet(
                 IPAddressRule(host=host, check_port=False),
-                TokenRule(param='token'),
+                TokenRule(tokens=self.tokens, param='token'),
             )
         self.command_router = command_router
+
 
     def __str__(self):
         c = self.__class__.__name__
@@ -123,7 +126,7 @@ class Router(backpipe.BackPipeMixin):
         if self.command_router is not None:
             await self.tell_command.add_command_router(self.command_router)
             self.command_router = None
-        self.can_tokenize = await tokens.ask(tokens.tokenizer_onboarding_token)
+        self.can_tokenize = await self.tokens.ask(tokens.tokenizer_onboarding_token)
 
     def resolve_adapter(self, pointer):
         """If the given pointer is a string, resolve from the
@@ -180,7 +183,7 @@ class Router(backpipe.BackPipeMixin):
         return True
 
     async def use_token(self, websocket, _uuid, token):
-        ok = await tokens.use_token(_uuid, token)
+        ok = await self.tokens.use_token(_uuid, token)
         if ok is False:
             dlog('tokens.use_token failed.')
             return False
@@ -188,7 +191,7 @@ class Router(backpipe.BackPipeMixin):
 
     async def apply_auto_subscribed(self, websocket, token):
         # if auto_subscribe, bind to rooms.
-        obj = await tokens.get_token_object(token)
+        obj = await self.tokens.get_token_object(token)
         if obj.get('auto_subscribe', False) is True:
             subscribed = await self.get_socket_subscriptions(websocket)
             await self.bind_socket_rooms(websocket, subscribed)
@@ -214,7 +217,7 @@ class Router(backpipe.BackPipeMixin):
         await self.rooms.remove_connection(sid)
         await live_register.remove(websocket)
         await self.tell_command.disconnect(websocket, data)
-        await tokens.unuse_token(sid, websocket.token)#, extras['token'])
+        await self.tokens.unuse_token(sid, websocket.token)#, extras['token'])
 
     async def dispatch(self, websocket, msg:Envelope):
 
@@ -296,7 +299,7 @@ class Router(backpipe.BackPipeMixin):
     async def get_token_subscriptions(self, token):
         """Return a list of rooms and clients this socket is subscribed to.
         """
-        token_obj = await tokens.get_token_object(token)
+        token_obj = await self.tokens.get_token_object(token)
         subscriptions = token_obj.get('subscriptions', None)
         if subscriptions is None:
             if token_obj.get('inherit_subscriptions', False):
@@ -306,7 +309,7 @@ class Router(backpipe.BackPipeMixin):
         return tuple((subscriptions or {}).keys())
 
     async def get_token_owner(self, token):
-        return await tokens.get_owner(token)
+        return await self.tokens.get_owner(token)
 
 
 class CommandRouter(Router):
