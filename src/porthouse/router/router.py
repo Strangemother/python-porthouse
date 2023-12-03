@@ -25,38 +25,21 @@ import asyncio
 
 from loguru import logger
 dlog = logger.debug
+elog = logger.error
 
-from .rules import RuleSet, IPAddressRule, TokenRule
-from .register import live_register
-from .envelope import Envelope
-from . import config as conf
-from . import tokens
-from . import rooms
-from . import backpipe
-from . import adapters
+from ..rules import RuleSet, IPAddressRule, TokenRule
+from ..register import live_register
+from ..envelope import Envelope
+from .. import (config as conf,
+                 tokens,
+                 rooms,
+                 backpipe,
+                 adapters,)
+
+from .tell import TellCommand
 
 
-class TellCommand(object):
-
-    def __init__(self):
-        self.command_routers = ()
-
-    async def disconnect(self, websocket, data):
-        """
-            await self.tell_command.disconnect(websocket, data)
-        """
-        dlog(f'drop {websocket=}')
-
-    async def connect(self, websocket, _uuid, token):
-        """
-            await self.tell_command.connect(websocket, _uuid, token)
-        """
-        dlog(f'new {websocket=}')
-
-    async def add_command_router(self, command_router):
-        dlog('Adding new command router to self.')
-        self.command_routers += (command_router, )
-        await command_router.tell_assigned(assigned=self)
+__all__ = ['Router']
 
 
 class Router(backpipe.BackPipeMixin):
@@ -65,24 +48,29 @@ class Router(backpipe.BackPipeMixin):
     name = None
     rooms = None
     command_routers = None
-    backpipe_token = '4e00a95c-b42d-42ca-9b20-625b6d5f3605'
+    backpipe_token = None
 
     def __init__(self, adapter=None, name=None, command_router=None):
         host = f'{conf.HOST}' #:{conf.PORT}'
         self.name = name
+        self.uuid = str(uuid.uuid4())
+
+        self.backpipe_token = '4e00a95c-b42d-42ca-9b20-625b6d5f3605'
 
         self.tell_command = TellCommand()
-
         self.rooms = rooms.Rooms()
-        self.tokens = tokens.Tokens()
+        self.tokens = tokens.Tokens(
+                api_endpoint='http://localhost:8000',
+                tokenizer_onboarding_token=35289759287529875,
+            )
 
         self.adapter_class = self.resolve_adapter(adapter) if adapter else None
         self.access_rules = RuleSet(
                 IPAddressRule(host=host, check_port=False),
                 TokenRule(tokens=self.tokens, param='token'),
             )
-        self.command_router = command_router
 
+        self.command_router = command_router
 
     def __str__(self):
         c = self.__class__.__name__
@@ -124,7 +112,7 @@ class Router(backpipe.BackPipeMixin):
         dlog(f'mounting to {app=}')
         self.adapter_class = self.resolve_adapter(adapter)
         if self.command_router is not None:
-            await self.tell_command.add_command_router(self.command_router)
+            await self.tell_command.add_command_router(self.command_router, adapter)
             self.command_router = None
         self.can_tokenize = await self.tokens.ask(tokens.tokenizer_onboarding_token)
 
@@ -165,7 +153,7 @@ class Router(backpipe.BackPipeMixin):
         # Ensure to call as fast as possible.
         await websocket.accept()
 
-        accept = await self.websocket_onboard( websocket, _uuid, token)
+        accept = await self.websocket_onboard(websocket, _uuid, token)
         # Return the ok. This is `True` to _enable waiting_.
         return accept
 
@@ -190,11 +178,19 @@ class Router(backpipe.BackPipeMixin):
         websocket.token = token
 
     async def apply_auto_subscribed(self, websocket, token):
+        """Suscribe this socket to the allowed (auto) rooms given the token
+        as a binding key.
+
+        """
         # if auto_subscribe, bind to rooms.
         obj = await self.tokens.get_token_object(token)
         if obj.get('auto_subscribe', False) is True:
+            print(f'\nApplying Auto subscriptions to {token=}\n')
             subscribed = await self.get_socket_subscriptions(websocket)
+            print(f'\nto {subscribed=}\n')
             await self.bind_socket_rooms(websocket, subscribed)
+        else:
+            dlog('auto_subscribe is False')
 
     async def recv_socket_event(self, websocket, data):
         """The recv_socket_event method is the primary method for the
@@ -216,7 +212,7 @@ class Router(backpipe.BackPipeMixin):
         sid = websocket.socket_id
         await self.rooms.remove_connection(sid)
         await live_register.remove(websocket)
-        await self.tell_command.disconnect(websocket, data)
+        await self.tell_command.disconnect(websocket, websocket.token, data)
         await self.tokens.unuse_token(sid, websocket.token)#, extras['token'])
 
     async def dispatch(self, websocket, msg:Envelope):
@@ -243,7 +239,7 @@ class Router(backpipe.BackPipeMixin):
         return await self.send_to(sockets, websocket, msg)
 
     async def filter_allowed_destinations(self, websocket, msg):
-        names = msg.destination
+        names = msg.destination or ()
         ## If names is None, assume all subscribed
         subscribed = await self.get_socket_subscriptions(websocket)
         allowed = subscribed
@@ -311,14 +307,4 @@ class Router(backpipe.BackPipeMixin):
     async def get_token_owner(self, token):
         return await self.tokens.get_owner(token)
 
-
-class CommandRouter(Router):
-    assigned = None
-
-    def __init__(self):
-        self.assigned = ()
-
-    async def tell_assigned(self, assigned):
-        dlog(f'Assigned {assigned}')
-        self.assigned += (assigned, )
 
