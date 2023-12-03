@@ -16,9 +16,10 @@ def add_adapter(name, class_):
 
 
 def get_adapter(name, router):
-    r = ADAPTERS['_cache'].get(name, None)
+    inner_name = f"{name}-{router.uuid}"
+    r = ADAPTERS['_cache'].get(inner_name, None)
     if r is None:
-        r = ADAPTERS['_cache'][name] = ADAPTERS[name](router)
+        r = ADAPTERS['_cache'][inner_name] = ADAPTERS[name](router)
     return r
 
 
@@ -33,6 +34,9 @@ class Adapter(object):
 
     async def wait_receive(self, websocket, **extras):
         return await websocket.receive()
+
+    async def wait_receive_json(self, websocket, **extras):
+        return await websocket.receive_json()
 
     async def wait_exit(self, websocket):
         if websocket.client_state.value == 1:  # websocket.CONNECTED

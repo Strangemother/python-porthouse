@@ -89,7 +89,7 @@ async def command_ingress(websocket, **kw):
     websocket._ok = await command_adapter.websocket_accept(websocket, **kw)
 
     while websocket._ok:
-        data = await command_adapter.wait_receive(websocket)
+        data = await command_adapter.wait_receive_json(websocket)
         ok = await command_adapter.handle_command_message(websocket, data)
     else:
         await command_adapter.wait_exit(websocket)

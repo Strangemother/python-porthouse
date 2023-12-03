@@ -33,5 +33,16 @@ async def websocket_endpoint_primary(websocket: WebSocket,token=None):
 
 @app.websocket("/commander/{token}")
 async def websocket_endpoint_commander(websocket: WebSocket,token=None):
-    dlog('Websocket on primary port.')
+    dlog('Websocket on commander port.')
     await primary.command_ingress(websocket, token=token)
+
+
+from fastapi.responses import RedirectResponse
+
+@app.get("/redirect")
+@app.get("/redirect/{token}")
+async def redirect_typer(websocket: WebSocket, token=None):
+    u = "/"
+    if token is not None:
+        u = f"/{token}/"
+    return RedirectResponse(u)

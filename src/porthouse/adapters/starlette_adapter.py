@@ -47,7 +47,8 @@ class StarletteAdapter(Adapter):
         """
         if default is None:
             default = self.typemap['default']
-        action_func = self.typemap.get(data['type'], None) or default
+        _type = data.get('type')
+        action_func = self.typemap.get(_type, None) or default
         ok = await action_func(websocket, data)
         return ok
 

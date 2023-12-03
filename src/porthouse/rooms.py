@@ -60,7 +60,6 @@ class Room(object):
     """
     connections = None
 
-
     def __init__(self, space, name):
         self.connections = set()
         self.space = space

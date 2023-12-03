@@ -1,18 +1,36 @@
-const URL = "127.0.0.1"
+/*
+
+    p = PocketSocket.commander(TOKEN)
+    m = MultiSocket.create(3);
+ */
+
+const DOMAIN = "127.0.0.1"
     , PORT = window.location.port
-    , TOKEN = 1111
+    , URL = ""
+    , COMMAND_URL = "/commander"
+    , TOKEN = '2bee8693-76a1-474a-8088-86447018ce73'
     ;
 
 
-const makeUrl = function(client_id) {
-    return `ws://${URL}:${PORT}/${TOKEN}`
+const makeUrl = function(domain=DOMAIN, url=URL, token=TOKEN) {
+    return `ws://${domain}:${PORT}${url}/${token}`
 }
 
+let _c = 0;
 
 class PocketSocket extends WebSocket {
+    static commander(token) {
+        let s = PocketSocket.connect(COMMAND_URL, token)
+        s._id = ++_c;
+        return s
+    }
 
-    static connect(url) {
-        const w = new PocketSocket(url)
+    static connect(url, _token) {
+        let u = url
+        if(_token !== undefined) {
+            u = makeUrl(DOMAIN, url, _token)
+        }
+        const w = new PocketSocket(u)
 
         w.addEventListener("error", w.onerror.bind(w));
         w.addEventListener("message", w.onmessage.bind(w));
@@ -55,7 +73,12 @@ class PocketSocket extends WebSocket {
         byteArray.fill(fill);
         return this.send(byteArray.buffer);
     }
+
+    sendJSON(obj) {
+        this.send(JSON.stringify(obj))
+    }
 }
+
 
 class MultiSocket {
     /* Manage many sockets */
@@ -93,8 +116,8 @@ class MultiSocket {
 
 var client_id = Date.now()
 
-var newSocket = function(client_id){
-    const url = makeUrl(client_id)
+var newSocket = function(client_id, token=TOKEN){
+    const url = makeUrl(client_id, token)
     var ws = new PocketSocket.connect(url);
 
     return ws
@@ -123,7 +146,7 @@ var generateMany = function(count=5) {
     const r = []
     for (var i = 0; i < count; i++) {
         let url = makeUrl(i)
-        let w = PocketSocket.connect(url)
+        let w = PocketSocket.connect(URL, TOKEN)
         w._id = i
         r.push(w)
     }

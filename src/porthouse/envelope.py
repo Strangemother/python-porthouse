@@ -11,6 +11,14 @@ class Envelope(object):
         self.content = content
         self._uuid = str(uuid.uuid4())
 
+    @classmethod
+    def wrap(cls, str_content, owner, type='websocket.receive'):
+        obj = {
+            'type': type,
+            'text': str_content,
+        }
+        return cls(obj, owner)
+
     @property
     def id(self):
         return self._uuid
@@ -18,8 +26,12 @@ class Envelope(object):
     @property
     def destination(self):
         # return self.content['text'].split()[0]
-        text = self.content['text']
-        return parse_destination(text)
+        text = self.content.get('text') or self.content
+        if isinstance(text, str):
+            return parse_destination(text)
+
+        if isinstance(text, dict):
+            return text.get('destination', None)
 
 
 def parse_destination(text, key='destination'):
