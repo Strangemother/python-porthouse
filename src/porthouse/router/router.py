@@ -23,9 +23,8 @@ The outer shell manages throughput to other routers.
 import uuid
 import asyncio
 
-from loguru import logger
-dlog = logger.debug
-elog = logger.error
+from ..log import *
+from .. import log
 
 from ..rules import RuleSet, IPAddressRule, TokenRule
 from ..register import live_register
@@ -87,7 +86,7 @@ class Router(backpipe.BackPipeMixin):
         Produced by converting the namespace and any extended config to a dict.
         """
         k = tuple(namespace_dict.keys())
-        dlog(f'apply namespace dict (keys): {k}')
+        log.d(f'apply namespace dict (keys): {k}')
         self._system_config = namespace_dict
         self.prepare_backpipe(ports=namespace_dict.get('balance_ports'))
 
@@ -97,19 +96,19 @@ class Router(backpipe.BackPipeMixin):
         self.primary_addresses = addresses
 
         my_host, my_port = addresses[0]
-        print('set_primary_sockets', my_host, my_port)
+        log.d('set_primary_sockets', my_host, my_port)
         if self.has_backpipe:
             await self.start_backpipe(my_host, my_port)
 
     async def backpipe_recv(self, message, websocket):
         """A message from the _backpipe_.
         """
-        dlog(f'RECV: "{message}"')
+        log.d(f'RECV: "{message}"')
 
     async def startup(self, app, adapter):
         """The _first method_ to run.
         """
-        dlog(f'mounting to {app=}')
+        log.d(f'mounting to {app=}')
         self.adapter_class = self.resolve_adapter(adapter)
         if self.command_router is not None:
             await self.tell_command.add_command_router(self.command_router, adapter)
@@ -139,7 +138,7 @@ class Router(backpipe.BackPipeMixin):
         return accept
 
     async def websocket_accept(self, websocket, **extras) -> bool:
-        dlog(f'Websocket ingress {websocket}')
+        log.d(f'Websocket ingress {websocket}')
         _uuid = str(uuid.uuid4())
         extras.setdefault('uuid', _uuid)
 
@@ -163,7 +162,7 @@ class Router(backpipe.BackPipeMixin):
         # Bind to the local register
         await live_register.add(websocket, _uuid)
 
-        dlog('Sending backpipe accept statement')
+        log.d('Sending backpipe accept statement')
         await self.backpipe_send(f'accepted: {_uuid}')
         # Turn on connections.
         await self.apply_auto_subscribed(websocket, token)
@@ -173,7 +172,7 @@ class Router(backpipe.BackPipeMixin):
     async def use_token(self, websocket, _uuid, token):
         ok = await self.tokens.use_token(_uuid, token)
         if ok is False:
-            dlog('tokens.use_token failed.')
+            log.d('tokens.use_token failed.')
             return False
         websocket.token = token
 
@@ -190,7 +189,7 @@ class Router(backpipe.BackPipeMixin):
             print(f'\nto {subscribed=}\n')
             await self.bind_socket_rooms(websocket, subscribed)
         else:
-            dlog('auto_subscribe is False')
+            log.d('auto_subscribe is False')
 
     async def recv_socket_event(self, websocket, data):
         """The recv_socket_event method is the primary method for the
@@ -198,7 +197,7 @@ class Router(backpipe.BackPipeMixin):
 
         Wrap the data into an Envelope and call `dispatch()`
         """
-        dlog(f'Data {data}')
+        log.d(f'Data {data}')
         msg = Envelope(data, websocket)
         await self.dispatch(websocket, msg)
         return msg.id
@@ -207,7 +206,7 @@ class Router(backpipe.BackPipeMixin):
         """Called by the ingress, the websocket_disconnect method detaches
         the socket from all internal graphs and removes one active token use.
         """
-        dlog('disconnect')
+        log.d('disconnect')
         # Tell the client pipe
         sid = websocket.socket_id
         await self.rooms.remove_connection(sid)

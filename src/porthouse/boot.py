@@ -1,9 +1,6 @@
-
 from .arguments import get_args
-
-from loguru import logger
-dlog = logger.debug
-
+# from loguru import logger
+from . import log
 # from . import run
 
 import sys
@@ -20,7 +17,7 @@ def print_banner(args):
 
 
 def main_run():
-    dlog(f'__main__::main executor')
+    log.d(f'__main__::main executor')
     return cli_run()
 
 
@@ -31,12 +28,12 @@ def cli_run():
 
     level = args.router_log_level.upper()
     # global configure.
-    logger.configure(handlers=[{"sink": sys.stdout, "level": level}])
+    log.logger.configure(handlers=[{"sink": sys.stdout, "level": level}])
 
     if hasattr(args, 'func'):
         return args.func(args)
 
-    dlog('-- end -- ')
+    log.d('-- end -- ')
     # run.async_server(**vars(args))
 
 

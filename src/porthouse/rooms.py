@@ -1,7 +1,5 @@
 from collections import defaultdict
-
-from loguru import logger
-dlog = logger.debug
+from . import log
 
 
 ROOMS = {
@@ -74,14 +72,14 @@ class Room(object):
             self.open_room()
         self.space.socket_graph_add(sid, self.name)
 
-        dlog(f'Assigning connection "{sid}" to {self.name} - len({l})')
+        log.d(f'Assigning connection "{sid}" to {self.name} - len({l})')
 
     def open_room(self):
         """This room has become _active_ due to this first socket.
         Ensure the room exists persistently for all incoming
         connections and mark this user as the _owner_.
         """
-        dlog(f'Opening new room "{self.name}" into space "{self.space}"')
+        log.d(f'Opening new room "{self.name}" into space "{self.space}"')
         self.space.open_rooms[self.name] = self
         self.open = True
 
@@ -90,5 +88,5 @@ class Room(object):
         self.connections.remove(sid)
         l = len(self.connections)
         self.space.socket_graph_remove(sid, self.name)
-        dlog(f'Removed connection "{sid}" from {self.name} - len({l})')
+        log.d(f'Removed connection "{sid}" from {self.name} - len({l})')
 

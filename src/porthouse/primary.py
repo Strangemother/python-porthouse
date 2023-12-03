@@ -26,13 +26,9 @@ import asyncio
 
 from fastapi import WebSocket, FastAPI, Request
 
-from loguru import logger
-dlog = logger.debug
-
+from . import log
 from .router import Router, CommandRouter#, RouterPipe
-from . import config as conf
-from . import index_page
-from . import adapters
+from . import config as conf, index_page, adapters
 
 
 command_router = CommandRouter()
@@ -46,12 +42,12 @@ command_adapter = adapters.get_adapter('starlette', command_router)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    dlog('lifespan Startup')
+    log.d('lifespan Startup')
     # await asyncio.sleep(3)
-    # dlog('lifespan Startup - mount')
+    # log.d('lifespan Startup - mount')
     await router.startup(app, adapter='starlette')
     yield
-    dlog('lifespan shutdown')
+    log.d('lifespan shutdown')
     await router.shutdown(app)
 
 

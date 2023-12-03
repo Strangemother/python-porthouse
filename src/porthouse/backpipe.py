@@ -14,9 +14,7 @@ from websockets.exceptions import ConnectionClosedError
 
 from . import config as conf
 
-from loguru import logger
-dlog = logger.debug
-
+from . import log
 
 class BackPipeMixin(object):
     # Flagged True when applied by the async connect.
@@ -27,14 +25,14 @@ class BackPipeMixin(object):
         self.has_backpipe = True
         self._ports = ports or conf.BALANCE_PORTS
         self._host = host or conf.HOST
-        dlog('prepare_backpipe: {ports}', ports=self._ports)
+        log.d('prepare_backpipe: {ports}', ports=self._ports)
         self._pipe = BackPipe(self.backpipe_recv)
 
     async def start_backpipe(self, my_host=None, my_port=None):
         ports = self._ports or ()
 
         balance_address = (self._host, ports) # ('ip', (port, port,...))
-        dlog(balance_address)
+        log.d(balance_address)
         balance_port = str(balance_address[1])
 
 
@@ -65,11 +63,11 @@ class BackPipeMixin(object):
         if self.has_backpipe:
             await self._pipe.send(message)
             return True
-        dlog('No Backpipe.')
+        log.d('No Backpipe.')
         return False
 
     async def backpipe_recv(self, message):
-        dlog(f'RECV: "{message}"')
+        log.d(f'RECV: "{message}"')
 
 
 class BackPipe(object):
@@ -129,14 +127,14 @@ class BackPipe(object):
             socket_2 = await self.connect_watch(uri[2], raise_disconnect, listen)
 
         """
-        dlog('Connecting to many backpipes', uris)
+        log.d('Connecting to many backpipes', uris)
         sockets = ()
         for uri in uris:
             socket = await self.connect_watch(uri, raise_disconnect, listen)
             sockets += (socket,)
             # await self.producer_handler(self.socket)
         l = len(sockets)
-        dlog("Prepared {c} socket{s}",
+        log.d("Prepared {c} socket{s}",
                 c=l,
                 s=['', 's'][int(l == 1)],
             )
@@ -157,9 +155,9 @@ class BackPipe(object):
             socket = await w_connect(uri)
             _uuid = str(uuid.uuid4())
             socket.socket_id = _uuid
-            dlog(f'Backpipe connected ({socket.port}): {uri}')
+            log.d(f'Backpipe connected ({socket.port}): {uri}')
         except ConnectionRefusedError:
-            dlog(f'Cannot connect to backpipe: {uri} - connection refused')
+            log.d(f'Cannot connect to backpipe: {uri} - connection refused')
             return None
 
         await self.send_wake(socket)
@@ -178,7 +176,7 @@ class BackPipe(object):
         try:
             await self.consume(socket)
         except ConnectionClosedError as exc:
-            dlog('Backpipe closed:', exc)
+            log.d('Backpipe closed:', exc)
             if socket:
                 await socket.close()
             if raise_disconnect:
@@ -194,7 +192,7 @@ class BackPipe(object):
             asyncio.create_task(self.consume_task(socket, raise_disconnect))
         """
         async for message in websocket:
-            dlog('BackPipe message from {id}', id=websocket.port)
+            log.d('BackPipe message from {id}', id=websocket.port)
             await self.response_handler(message, websocket)
             await asyncio.sleep(0)
             # await websocket.send('Thank you.')
@@ -204,15 +202,15 @@ class BackPipe(object):
             message = await self.queue.get()
             await websocket.send(message)
             self.queue.task_done()
-        dlog('Joining queue')
+        log.d('Joining queue')
         await self.queue.join()
 
     async def send_wake(self, socket=None):
         """Send the _wake word_ as a message to the peer."""
         message = 'Hello from {}'.format(self.router_address)
-        dlog('Sending wake word...')
+        log.d('Sending wake word...')
         sent = await self.send(message, socket)
-        dlog(f'{sent=}')
+        log.d(f'{sent=}')
 
     async def send(self, data, socket=None):
         sock = socket or self.socket
@@ -224,6 +222,6 @@ class BackPipe(object):
                 sent += 1
 
         if sent == 0:
-            dlog('No Socket to send through')
+            log.d('No Socket to send through')
             return False
         return True

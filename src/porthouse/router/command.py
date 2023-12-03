@@ -23,14 +23,13 @@ The outer shell manages throughput to other routers.
 # import uuid
 # import asyncio
 
-from loguru import logger
-dlog = logger.debug
-elog = logger.error
+
 
 # from .rules import RuleSet, IPAddressRule, TokenRule
 # from .register import live_register
 from ..envelope import Envelope
 # from . import config as conf
+from .. import log
 from .. import tokens
 from .router import Router
 # from . import rooms
@@ -59,12 +58,12 @@ class CommandRouter(Router):
         """A router assignment occured on the bound router. This may be _this_
         router, as the first binding of the child.
         """
-        dlog(f'Assigned {assigned}')
+        log.d(f'Assigned {assigned}')
         self.assigned += (assigned, )
         await self.startup(None, adapter)
 
     async def tell_disconnect(self, websocket, _uuid, data):
-        dlog(f'...tell owners about disconnect ID: "{websocket.socket_id}"')
+        log.d(f'...tell owners about disconnect ID: "{websocket.socket_id}"')
         message = f"disconnected: {_uuid}"
         token = websocket.token
         await self.message_out(websocket, message, token, _uuid)
@@ -88,7 +87,7 @@ class CommandRouter(Router):
         allowed = (room, )
         # Convert the room names to live sockets.
         sockets = await self.gather_sockets(*allowed, origin_socket=origin_socket)
-        dlog(f'{len(sockets)} target sockets')
+        log.d(f'{len(sockets)} target sockets')
         # 3. envelope
         msg = Envelope.wrap(message, websocket)
         # 4. dispatch
@@ -102,7 +101,7 @@ class CommandRouter(Router):
         # if auto_subscribe, bind to rooms.
         # obj = await self.tokens.get_token_object(token)
         subscribed = await self.get_token_subscriptions(token)
-        dlog(f'{subscribed=}')
+        log.d(f'{subscribed=}')
         await self.bind_socket_rooms(websocket, subscribed)
 
     async def get_token_subscriptions(self, token):
@@ -112,7 +111,7 @@ class CommandRouter(Router):
         """
         token_obj = await self.tokens.get_token_object(token)
         owner = await self.get_token_owner(token)
-        dlog(f'Token {owner=}')
+        log.d(f'Token {owner=}')
         return (self.get_owner_room(owner),)
 
     def get_owner_room(self, owner):
