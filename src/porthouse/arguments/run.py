@@ -4,7 +4,7 @@ import sys
 from .installer import install_subparser
 from .. import config as conf
 from .. import run as porthouse_run
-
+from ..router import methods
 """
 Arguments to accept:
 
@@ -73,7 +73,9 @@ def run_command_hook(subparsers):
     add('-r', '--routing-method',
         action='store',
         default='supercast',
-        help=Helps.routing_method
+        help=Helps.routing_method,
+        choices=methods.values(),
+        # choices=['roomcast', 'supercast'],
         )
 
     return run_parser
