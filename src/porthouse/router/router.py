@@ -36,9 +36,14 @@ from .. import (config as conf,
                  adapters,)
 
 from .tell import TellCommand
+from .methods import Methods
 
 
 __all__ = ['Router']
+
+
+from ..dispatch.supercast import supercast as supercast_dispatch_method
+from ..dispatch.roomcast import roomcast as roomcast_dispatch_method
 
 
 class Router(backpipe.BackPipeMixin):
@@ -70,6 +75,10 @@ class Router(backpipe.BackPipeMixin):
             )
 
         self.command_router = command_router
+        self.dispatch_methods = {
+            'supercast': supercast_dispatch_method,
+            'roomcast': roomcast_dispatch_method,
+        }
 
     def __str__(self):
         c = self.__class__.__name__
@@ -216,26 +225,23 @@ class Router(backpipe.BackPipeMixin):
 
     async def dispatch(self, websocket, msg:Envelope):
 
-        method = self.roomcast
+        method = roomcast_dispatch_method
 
-        if self.dispatch_method == 'supercast':
-            method = self.supercast
+        if self.dispatch_method == Methods.SUPERCAST:
+            method = supercast_dispatch_method
 
-        return await method(websocket, msg)
+        method = self.dispatch_methods.get(self.dispatch_method) or None
+        if method:
+            return await method(self, websocket, msg)
+        return self.no_dispatch(websocket, msg)
 
-    async def roomcast(self, websocket, msg:Envelope):
-        # convert the rooms to socket names
-        allowed = await self.filter_allowed_destinations(websocket, msg)
-        dlog(f'Send to {allowed}')
-
-        # Convert the room names to live sockets.
-        sid = websocket.socket_id
-        sockets = await self.gather_sockets(*allowed, origin_socket=sid)
-        dlog(f'{len(sockets)} target sockets')
-
-        # send to subscribed
-        # return await self.supercast(websocket, msg)
-        return await self.send_to(sockets, websocket, msg)
+    async def no_dispatch(self, websocket, msg):
+        """The given message does not have a valid dispatch method.
+        This occurs if the `self.dispatch_method` is not within the avaiable
+        `self.dispatch_methods` list.
+        """
+        log.e(f'Lost Message due to no valid dispatch method, {msg.id}')
+        log.d(f'Origin: {websocket=}')
 
     async def filter_allowed_destinations(self, websocket, msg):
         names = msg.destination or ()
@@ -244,7 +250,7 @@ class Router(backpipe.BackPipeMixin):
         allowed = subscribed
 
         if len(names) > 0:
-            dlog('Filtering destination names')
+            log.d('Filtering destination names')
             # if names, but is not subscribed; reject
             ## Filter to live sockets.
             allowed = tuple(set(subscribed) & set(names))
@@ -252,7 +258,7 @@ class Router(backpipe.BackPipeMixin):
 
     async def bind_socket_rooms(self, websocket, room_names):
         # Apply the socket to the room connection (if allowed)
-        dlog(f'Auto Binding websocket to {room_names}')
+        log.d(f'Auto Binding websocket to {room_names}')
         for name in room_names:
             room = self.rooms.get_room(name)
             if room is None:
@@ -278,14 +284,6 @@ class Router(backpipe.BackPipeMixin):
         live = self.rooms.get_room(room_name).connections
         ignores = (origin_socket,) if origin_socket else ()
         return await live_register.resolve_sockets(live, ignores)
-
-    async def supercast(self, websocket, msg:Envelope):
-        uuid = websocket.socket_id
-        # for now, send to all.
-        for k, socket in live_register.get_connections().items():
-            if k == uuid:
-                continue
-            await socket.send_text(msg.content['text'])
 
     async def get_socket_subscriptions(self, websocket):
         token = websocket.token
