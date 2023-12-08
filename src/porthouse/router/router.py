@@ -193,9 +193,9 @@ class Router(backpipe.BackPipeMixin):
         # if auto_subscribe, bind to rooms.
         obj = await self.tokens.get_token_object(token)
         if obj.get('auto_subscribe', False) is True:
-            print(f'\nApplying Auto subscriptions to {token=}\n')
+            log.d(f'\nApplying Auto subscriptions to {token=}\n')
             subscribed = await self.get_socket_subscriptions(websocket)
-            print(f'\nto {subscribed=}\n')
+            log.d(f'\nto {subscribed=}\n')
             await self.bind_socket_rooms(websocket, subscribed)
         else:
             log.d('auto_subscribe is False')
@@ -224,12 +224,6 @@ class Router(backpipe.BackPipeMixin):
         await self.tokens.unuse_token(sid, websocket.token)#, extras['token'])
 
     async def dispatch(self, websocket, msg:Envelope):
-
-        method = roomcast_dispatch_method
-
-        if self.dispatch_method == Methods.SUPERCAST:
-            method = supercast_dispatch_method
-
         method = self.dispatch_methods.get(self.dispatch_method) or None
         if method:
             return await method(self, websocket, msg)
