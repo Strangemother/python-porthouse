@@ -5,12 +5,18 @@ from . import log
 
 import sys
 
+from pathlib import Path
 
 def print_banner(args):
     level = args.log_level.upper()
+    conf = args.parsed_config if hasattr(args, 'parsed_config') else pargs.config
+
+    if conf is not None:
+        conf = str(Path(conf).absolute().as_posix())
 
     lines = (f"\n\tPorthouse cli - ... Fancy Banner ... \n"
              f"\t{level=}\n"
+             f"\t{conf=}\n"
              f"\n"
             )
     print(lines)
@@ -20,13 +26,18 @@ def main_run():
     log.d(f'__main__::main executor')
     return cli_run()
 
+from .config import configure_conf
 
 def cli_run():
     args = get_args()
 
     print_banner(args)
 
-    level = args.router_log_level.upper()
+    configure_conf(args)
+
+    level = args.log_level.upper()
+    if hasattr(args, 'router_log_level'):
+        level = args.router_log_level.upper()
     # global configure.
     log.logger.configure(handlers=[{"sink": sys.stdout, "level": level}])
 
