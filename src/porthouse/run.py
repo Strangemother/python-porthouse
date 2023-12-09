@@ -81,6 +81,9 @@ def get_config(config=None):
     The real source: site-packages/uvicorn/config.py
     """
     _conf = config or {}
+
+    ## At this point the conf_module is already configured
+    # including arguments and file options.
     defaults = dict(host=conf_module.HOST,
             port=conf_module.PORT,
             log_level=conf_module.LOG_LEVEL,
@@ -91,9 +94,9 @@ def get_config(config=None):
             target=conf_module.INGRESS_APP,
         )
 
-    arg_items = arguments.get_parsed_args().items()
+    # arg_items = arguments.get_parsed_args().items()
     wanted = tuple(uvicorn_conf.UVICORN_CONF_ALLOWED.keys()) + ('target',)
-    defaults.update({x:y for x,y in _conf.items() if x in wanted})
+    # defaults.update({x:y for x,y in _conf.items() if x in wanted})
     # defaults.update(_conf)
     print(defaults)
     target = defaults.pop('target')
