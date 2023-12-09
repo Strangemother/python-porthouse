@@ -31,9 +31,24 @@ class Helps:
     routing_method = 'Assign how the messages are dispatched within the router. default: "%(default)s"'
     log_level = 'set the application logging level default: "%(default)s"'
     balance_ports = f'Balance Ports - default: "{conf.BALANCE_PORTS}"'
-    host = 'Bind to an ip address or Ingress HOST - default: "%(default)s"'
-    port = 'Ingress Port - default: "%(default)s"'
-    app = 'Ingress Application - default: "%(default)s"'
+    host = 'Bind to an ip address or Ingress HOST - default: "%(const)s"'
+    port = 'Ingress Port - default: "%(const)s"'
+    app = 'Ingress Application - default: "%(const)s"'
+
+
+def option(default=None, help=None, **params):
+    """A helper function to assit with kwarg loadout for an argument
+    """
+    # add(*switches,**params)
+
+    params['default'] = None
+    if default is not None:
+        params.setdefault('const', default)
+        params.setdefault('nargs', '?')
+
+    if help is not None:
+        params['help'] = getattr(Helps, help, None)
+    return params
 
 
 def run_command_hook(subparsers):
@@ -42,27 +57,29 @@ def run_command_hook(subparsers):
     run_parser.set_defaults(func=run_command)
     add = run_parser.add_argument
 
-    add('-a','--app',
+    add('-a','--app', **option(
             type=str,
             default=conf.INGRESS_APP,
-            help=Helps.app,
+            help='app',
             dest='target',
             metavar='APP_STRING'
-        )
+        ))
 
-    add('-p','--port',
+    add('-p','--port',**option(
             type=int,
-            default=conf.PORT,
-            help=Helps.port,
-        )
+            nargs='?',
+            const=conf.PORT,
+            default=None,
+            help='port',
+        ))
 
-    add('-i','--host',
+    add('-i','--host',**option(
             type=str,
             default=conf.HOST,
             help=Helps.host,
-        )
+        ))
 
-    add('-b','--balance-ports',
+    add('-b','--balance-ports', **option(
             action='extend',
             nargs='+',
             ## Note bug: https://github.com/python/cpython/issues/110131
@@ -70,9 +87,10 @@ def run_command_hook(subparsers):
             # nargs='*',
             # action='store',
             type=int,
-            default=None,
-            help=Helps.balance_ports,
-        )
+            default=conf.BALANCE_PORTS,
+            help='balance_ports',
+            const=None,
+        ))
 
     add('--router-log-level',
         action='store',
