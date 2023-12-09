@@ -37,13 +37,14 @@ from .. import (config as conf,
 
 from .tell import TellCommand
 from .methods import Methods
+from ..dispatch.register import get_register
 
 
 __all__ = ['Router']
 
 
-from ..dispatch.supercast import supercast as supercast_dispatch_method
-from ..dispatch.roomcast import roomcast as roomcast_dispatch_method
+# from ..dispatch.supercast import supercast as supercast_dispatch_method
+# from ..dispatch.roomcast import roomcast as roomcast_dispatch_method
 
 
 class Router(backpipe.BackPipeMixin):
@@ -54,31 +55,53 @@ class Router(backpipe.BackPipeMixin):
     command_routers = None
     backpipe_token = None
 
-    def __init__(self, adapter=None, name=None, command_router=None):
-        host = f'{conf.HOST}' #:{conf.PORT}'
+    def __init__(self, adapter=None, name=None, command_router=None, **options):
+        self._host = f'{conf.HOST}' #:{conf.PORT}'
         self.name = name
-        self.uuid = str(uuid.uuid4())
+        self.adapter = adapter
+        self.command_router = command_router
+        self.setup(**options)
 
-        self.backpipe_token = '4e00a95c-b42d-42ca-9b20-625b6d5f3605'
+    def setup(self, **options):
+        # non async method.
+        sd = options.setdefault
+        og = options.get
+
+        sd('adapter', self.adapter)
+        sd('host', self._host)
+        sd('command_router', self.command_router)
+        sd('backpipe_token', '4e00a95c-b42d-42ca-9b20-625b6d5f3605')
+        sd('api_endpoint', 'http://localhost:8000')
+        sd('tokenizer_onboarding_token', 35289759287529875)
+        sd('check_port', False)
+        # options.setdefault('uuid', None)
+        # options.setdefault('dispatch_methods')
+
+
+        self.uuid = og('uuid') or str(uuid.uuid4())
+        self.backpipe_token = og('backpipe_token')
 
         self.tell_command = TellCommand()
         self.rooms = rooms.Rooms()
         self.tokens = tokens.Tokens(
-                api_endpoint='http://localhost:8000',
-                tokenizer_onboarding_token=35289759287529875,
+                api_endpoint=og('api_endpoint'),
+                tokenizer_onboarding_token=og('tokenizer_onboarding_token'),
             )
 
+        adapter = og('adapter')
         self.adapter_class = self.resolve_adapter(adapter) if adapter else None
         self.access_rules = RuleSet(
-                IPAddressRule(host=host, check_port=False),
+                IPAddressRule(host=sd('host'), check_port=og('check_port')),
                 TokenRule(tokens=self.tokens, param='token'),
             )
 
-        self.command_router = command_router
+        # self.command_router = command_router
         self.dispatch_methods = {
-            'supercast': supercast_dispatch_method,
-            'roomcast': roomcast_dispatch_method,
+            # 'supercast': supercast_dispatch_method,
+            # 'roomcast': roomcast_dispatch_method,
+            **(og('dispatch_methods') or get_register())
         }
+
 
     def __str__(self):
         c = self.__class__.__name__
@@ -104,7 +127,7 @@ class Router(backpipe.BackPipeMixin):
         """
         self.primary_addresses = addresses
 
-        my_host, my_port = addresses[0]
+        my_host, my_port = addresses[0][0:2]
         log.d('set_primary_sockets', my_host, my_port)
         if self.has_backpipe:
             await self.start_backpipe(my_host, my_port)
