@@ -65,8 +65,6 @@ def get_args(argv=None):
     prep = get_pre_parser()
 
     prep_space, unknown = prep.parse_known_args(argv)
-
-    print(prep_space)
     if prep_space.loud:
         prep.print_help()
         sys.exit(0)

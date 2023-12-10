@@ -47,7 +47,9 @@ class Adapter(object):
         await websocket.close()
 
     def validate_accept(self, websocket, **extras):
-        return self.router.access_rules.is_valid(websocket, **extras)
+        f = self.router.access_rules.is_valid
+        print('!!  Adapter.validate_accept with ', f)
+        return f(websocket, **extras)
 
     async def handle_command_message(self, websocket, data):
         """A Message as a _command_ for the router state. This socket
