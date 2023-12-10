@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-class TestMain(TestCase):
+class TestCLIRun(TestCase):
 
     def test_cli_run(self):
         """Assert the cli module has a run method.

@@ -8,15 +8,22 @@ class MethodCallStats(object):
     calls = ()
     return_value = None
 
-    def __init__(self, name, return_value=None):
+    def __init__(self, name, return_value=None, awaitable=False):
         self._method_name = name
         self.return_value = return_value
+        self.awaitable = awaitable
 
     def __call__(self, *a, **kw):
-        print('--- New Call to', self._method_name)
+        # print('--- New Call to', self._method_name)
         self.call_count += 1
         self.called = True
         self.calls += ((a, kw),)
+        if self.awaitable:
+            # print('... Future')
+            f = Future()
+            f.set_result(self.return_value)
+            self.result_future = f
+            return f
         return self.return_value
 
     def called_with(self, *a, **kw):
@@ -25,9 +32,32 @@ class MethodCallStats(object):
         """
 
         for ca, ckw in self.calls:
-            if (ca == a) and (ckw == ckw):
+            if (ca == a) and (kw == ckw):
                 return True
         return False
+
+
+class AsyncMethodCallStats(MethodCallStats):
+    """The AsyncMethodCallStats patches a single async function
+    as a sink for the calls.
+    The result of an async call is a Future of the current result.
+
+        sa = StarletteAdapter(router)
+
+        # Insert an async stat sink
+        sa.handle_message = AsyncMethodCallStats()
+
+        # run
+        coro = sa.handle_command_message(websocket, data)
+        res = self.get_async_result(coro)
+
+    """
+    def __init__(self, name=None, return_value=None, awaitable=True):
+        super().__init__(name, return_value=return_value, awaitable=awaitable)
+
+
+from asyncio import Future
+
 
 class MethodSink(MethodCallStats):
     """A simplified mocking utility, allowing the replacement of methods
@@ -70,17 +100,20 @@ class MethodSink(MethodCallStats):
     Notice the `return_factory` instead of a `return_value`, as this ensures
     a fresh `MethodSink` is _called_ rather than returning the same instance.
     """
-    def __init__(self, return_factory=None, return_value=None, deep_sink=False):
+    def __init__(self, return_factory=None, return_value=None,
+                       deep_sink=False, awaitable=False):
         self.info = {}
         self.return_factory = return_factory or self.generic_return_factory
         self.return_value = return_value
         self.deep_sink = deep_sink
+        self.awaitable = awaitable
 
     def generic_return_factory(self):
         return self.return_value
 
+
+
     def __getattr__(self, name):
-        print('\n--- GetAttr MethodSink', name)
         res = self.info.get(name, None) or None
         if res is None:
             u = self.return_factory()
@@ -97,6 +130,7 @@ class MockRouter(object):
     recv_socket_event_call_count = 0
     recv_socket_event_args = None
     recv_socket_event_return_result = None
+    # recv_socket_event = AsyncMethodCallStats()
 
     async def websocket_accept(self, websocket, **extras):
         return websocket, extras
@@ -125,6 +159,8 @@ class MockWebSocket(object):
         self.send_text_call_count = 0
         self.client_state = MockClientState()
         self.validate_accept_call_count = 0
+        self.send_json = AsyncMethodCallStats()
+        self.send_text = AsyncMethodCallStats()
 
     def _new_client(self):
         return MockClient()
@@ -141,9 +177,9 @@ class MockWebSocket(object):
     async def receive_json(self):
         self.receive_json_call_count += 1
 
-    async def send_text(self, content):
-        self.send_text_call_count += 1
-        self.send_text_args = (content,)
+    # async def send_text(self, content):
+    #     self.send_text_call_count += 1
+    #     self.send_text_args = (content,)
 
 
 class MockTokens(object):

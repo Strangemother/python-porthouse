@@ -7,7 +7,7 @@ import argparse
 from porthouse.arguments.base import get_parser, get_pre_parser
 
 
-class TestArgumentBase(TestCase):
+class TestArgumentsBase(TestCase):
 
 
     @patch('argparse.ArgumentParser')

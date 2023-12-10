@@ -185,7 +185,7 @@ class TestAdapterBase(AsyncSupportedTestCase):
         accepted = self.get_async_result(coro)
 
         # No calls to send_text because the receipt is None.
-        assert client.send_text_call_count == 0
+        assert client.send_text.call_count == 0
 
 
     def test_default_action_receipt_return(self):
@@ -202,5 +202,5 @@ class TestAdapterBase(AsyncSupportedTestCase):
         coro = adapter.default_action(client, data)
         accepted = self.get_async_result(coro)
 
-        assert client.send_text_call_count == 1
-        assert client.send_text_args == ('receipt',)
+        assert client.send_text.call_count == 1
+        assert client.send_text.called_with('receipt',)

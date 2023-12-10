@@ -7,7 +7,7 @@ from porthouse.arguments.run import run_command_hook
 from mocks import MethodSink
 
 
-class TestMain(TestCase):
+class TestArgumentsInstaller(TestCase):
 
     def test_install_subparser(self):
         """Assert `py -m porthouse` executed the main() function
