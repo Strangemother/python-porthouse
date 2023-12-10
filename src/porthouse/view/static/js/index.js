@@ -8,7 +8,9 @@ const DOMAIN = "127.0.0.1"
     , PORT = window.location.port
     , URL = ""
     , COMMAND_URL = "/commander"
-    , TOKEN = '2bee8693-76a1-474a-8088-86447018ce73'
+    // , TOKEN = '2bee8693-76a1-474a-8088-86447018ce73'
+    , TOKEN = '901a73d2-f807-4813-982b-13196580f09b'
+
     ;
 
 
