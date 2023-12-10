@@ -8,4 +8,3 @@ e = elog
 
 __all__ = ['elog', 'dlog']
 
-

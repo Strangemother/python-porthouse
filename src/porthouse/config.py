@@ -1,3 +1,24 @@
+"""# Config.
+
+The `config` module acts as a centralised location for concurrent settings,
+applied through the library, terminal, and config files.
+
+Within the app call upon  a config option as normal:
+
+    from porthouse import config
+    config.HOST
+
+When the application is created, the pre merging of terminal options will
+alter these parameters before the sub application executes.
+
+Only constants from this config file will be installed from the terminal.
+
+    porthouse run --host 0.0.0.0 --something else
+    conf.HOST == '0.0.0.0'
+
+The local .porthouse file is TOML, applied into this config module using
+`merge_toml_to_config(conf:Path)`
+"""
 import sys
 import tomli
 
@@ -22,7 +43,6 @@ mb16 = 16 * mb1
 WS_MAX_SIZE = mb1
 
 DEFAULT_PORTHOUSE_FILENAME = '.porthouse'
-
 
 
 def configure_conf(namespace):

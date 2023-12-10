@@ -2,7 +2,7 @@ from ..envelope import Envelope
 from ..register import live_register
 
 
-async def supercast(self, websocket, msg:Envelope):
+async def supercast(router, websocket, msg:Envelope):
     """Dispatch the message to ALL live register connections
     """
     uuid = websocket.socket_id

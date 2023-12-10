@@ -13,8 +13,8 @@ from websockets import connect as w_connect
 from websockets.exceptions import ConnectionClosedError
 
 from . import config as conf
-
 from . import log
+
 
 class BackPipeMixin(object):
     # Flagged True when applied by the async connect.

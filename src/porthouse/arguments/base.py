@@ -1,6 +1,7 @@
+from pathlib import Path
 import argparse
 import sys
-
+import os
 
 from . import installer, run
 from .. import config as conf_module
@@ -8,8 +9,6 @@ from ..config import configure_conf
 
 __all__ = ['get_parsed_args', 'get_args', 'get_parser']
 
-
-import os
 
 def get_parser():
     parser = argparse.ArgumentParser(prog='Porthouse',
@@ -85,13 +84,11 @@ def get_args(argv=None):
     namespace.parsed_config = resolve_config(namespace)
     return namespace
 
+
 def get_parsed_args(argv=None):
     v = get_args(argv)
     configure_conf(v)
     return vars(v)
-
-
-from pathlib import Path
 
 
 def resolve_config(namespace):
@@ -142,8 +139,6 @@ def resolve_config(namespace):
     # else:
         # for None conf, assume _current directory_
         # with no errors
-
-
 
 
 if __name__ == '__main__':

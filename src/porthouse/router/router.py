@@ -30,10 +30,10 @@ from ..rules import RuleSet, IPAddressRule, TokenRule
 from ..register import live_register
 from ..envelope import Envelope
 from .. import (config as conf,
-                 tokens,
-                 rooms,
-                 backpipe,
-                 adapters,)
+                tokens,
+                rooms,
+                backpipe,
+                adapters,)
 
 from .tell import TellCommand
 from .methods import Methods
@@ -41,10 +41,6 @@ from ..dispatch.register import get_register
 
 
 __all__ = ['Router']
-
-
-# from ..dispatch.supercast import supercast as supercast_dispatch_method
-# from ..dispatch.roomcast import roomcast as roomcast_dispatch_method
 
 
 class Router(backpipe.BackPipeMixin):
@@ -56,7 +52,7 @@ class Router(backpipe.BackPipeMixin):
     backpipe_token = None
 
     def __init__(self, adapter=None, name=None, command_router=None, **options):
-        self._host = f'{conf.HOST}' #:{conf.PORT}'
+        self._host = f'{conf.HOST}'
         self.name = name
         self.adapter = adapter
         self.command_router = command_router
@@ -88,16 +84,16 @@ class Router(backpipe.BackPipeMixin):
         self.tell_command = TellCommand()
         self.rooms = rooms.Rooms()
         self.tokens = tokens.Tokens(
-                api_endpoint=og('api_endpoint'),
-                tokenizer_onboarding_token=og('tokenizer_onboarding_token'),
-            )
+            api_endpoint=og('api_endpoint'),
+            tokenizer_onboarding_token=og('tokenizer_onboarding_token'),
+        )
 
         adapter = og('adapter')
         self.adapter_class = self.resolve_adapter(adapter) if adapter else None
         self.access_rules = RuleSet(
-                IPAddressRule(host=sd('host'), check_port=og('check_port')),
-                TokenRule(tokens=self.tokens, param='token'),
-            )
+            IPAddressRule(host=sd('host'), check_port=og('check_port')),
+            TokenRule(tokens=self.tokens, param='token'),
+        )
 
         # self.command_router = command_router
         self.dispatch_methods = {
@@ -105,13 +101,6 @@ class Router(backpipe.BackPipeMixin):
             # 'roomcast': roomcast_dispatch_method,
             **(og('dispatch_methods') or get_register())
         }
-
-
-    def __str__(self):
-        c = self.__class__.__name__
-        m = self.__class__.__module__
-        i = self.name or id(self)
-        return f'<{m}.{c} "{i}">'
 
     async def set_system_config(self, namespace_dict):
         """Assign a large config object given from the system at
@@ -147,9 +136,11 @@ class Router(backpipe.BackPipeMixin):
         log.d(f'mounting to {app=}')
         self.adapter_class = self.resolve_adapter(adapter)
         if self.command_router is not None:
-            await self.tell_command.add_command_router(self.command_router, adapter)
+            await self.tell_command.add_command_router(self.command_router,
+                                                       adapter)
             self.command_router = None
-        self.can_tokenize = await self.tokens.ask(tokens.tokenizer_onboarding_token)
+        token = tokens.tokenizer_onboarding_token
+        self.can_tokenize = await self.tokens.ask(token)
 
     def resolve_adapter(self, pointer):
         """If the given pointer is a string, resolve from the
@@ -183,7 +174,8 @@ class Router(backpipe.BackPipeMixin):
 
         token = extras['token']
         ok = await self.use_token(websocket, _uuid, token)
-        if ok is False: return False
+        if ok is False:
+            return False
 
         # Ensure to call as fast as possible.
         await websocket.accept()
@@ -248,9 +240,10 @@ class Router(backpipe.BackPipeMixin):
         await self.rooms.remove_connection(sid)
         await live_register.remove(websocket)
         await self.tell_command.disconnect(websocket, websocket.token, data)
-        await self.tokens.unuse_token(sid, websocket.token)#, extras['token'])
+        # , extras['token'])
+        await self.tokens.unuse_token(sid, websocket.token)
 
-    async def dispatch(self, websocket, msg:Envelope):
+    async def dispatch(self, websocket, msg: Envelope):
         method = self.dispatch_methods.get(self.dispatch_method) or None
         if method:
             return await method(self, websocket, msg)
@@ -266,14 +259,14 @@ class Router(backpipe.BackPipeMixin):
 
     async def filter_allowed_destinations(self, websocket, msg):
         names = msg.destination or ()
-        ## If names is None, assume all subscribed
+        # If names is None, assume all subscribed
         subscribed = await self.get_socket_subscriptions(websocket)
         allowed = subscribed
 
         if len(names) > 0:
             log.d('Filtering destination names')
             # if names, but is not subscribed; reject
-            ## Filter to live sockets.
+            # Filter to live sockets.
             allowed = tuple(set(subscribed) & set(names))
         return allowed
 
@@ -286,7 +279,7 @@ class Router(backpipe.BackPipeMixin):
                 continue
             await room.add_connection(websocket)
 
-    async def send_to(self, sockets, origin_socket, msg:Envelope):
+    async def send_to(self, sockets, origin_socket, msg: Envelope):
         for socket in sockets:
             await socket.send_text(msg.content['text'])
         return sockets
@@ -326,3 +319,8 @@ class Router(backpipe.BackPipeMixin):
         return await self.tokens.get_owner(token)
 
 
+    def __str__(self):
+        c = self.__class__.__name__
+        m = self.__class__.__module__
+        i = self.name or id(self)
+        return f'<{m}.{c} "{i}">'

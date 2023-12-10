@@ -20,21 +20,12 @@ targeted addresses.
 
 The outer shell manages throughput to other routers.
 """
-# import uuid
-# import asyncio
 
-
-
-# from .rules import RuleSet, IPAddressRule, TokenRule
-# from .register import live_register
 from ..envelope import Envelope
-# from . import config as conf
 from .. import log
 from .. import tokens
 from .router import Router
-# from . import rooms
-# from . import backpipe
-# from . import adapters
+
 
 __all__ = ['CommandRouter']
 
