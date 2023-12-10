@@ -76,7 +76,11 @@ class Router(backpipe.BackPipeMixin):
         sd('check_port', False)
         # options.setdefault('uuid', None)
         # options.setdefault('dispatch_methods')
+        return self._mount(**options)
 
+    def _mount(self, **options):
+        sd = options.setdefault
+        og = options.get
 
         self.uuid = og('uuid') or str(uuid.uuid4())
         self.backpipe_token = og('backpipe_token')
