@@ -1,0 +1,1 @@
+pyinstaller --noconfim run.spec

@@ -10,8 +10,6 @@ from mocks import MethodSink
 class TestArgumentsInstaller(TestCase):
 
     def test_install_subparser(self):
-        """Assert `py -m porthouse` executed the main() function
-        """
         item1 = {}
         item2 = {}
         installer.INSTALLERS = []
@@ -22,9 +20,6 @@ class TestArgumentsInstaller(TestCase):
 
 
     def test_apply_subparsers_collects_subparser(self):
-        """Assert `py -m porthouse` executed the main() function
-        """
-
         subparser = MethodSink()
         subparser.add_parser.return_value = MethodSink()
         parser = MethodSink()
@@ -39,8 +34,6 @@ class TestArgumentsInstaller(TestCase):
         installer.apply_subparsers(parser)
         assert parser.add_subparsers.call_count == 1
 
-        # installer.INSTALLERS = [mock_subparser]
-        #
     def test_apply_subparsers_calls_installed_parsers(self):
         mock_subparsers_object = {}
         parser = MethodSink(return_value=mock_subparsers_object)

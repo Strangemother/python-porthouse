@@ -1,11 +1,10 @@
-import runpy
-
 from unittest.mock import patch
 from mocks import *
 from asyncsupported_testcase import *
 
 from porthouse import register
 from porthouse.envelope import Envelope
+
 
 class TestDispatchRoomcast(AsyncSupportedTestCase):
     # test that the roomcast function

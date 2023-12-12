@@ -1,5 +1,9 @@
 # Python Porthouse 🏢
 
+[![Upload Python Package](https://github.com/Strangemother/python-porthouse/actions/workflows/python-publish.yml/badge.svg)](https://github.com/Strangemother/python-porthouse/actions/workflows/python-publish.yml)
+![PyPI](https://img.shields.io/pypi/v/python-porthouse?label=python-porthouse)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/python-porthouse)
+
 
 > Streamlined Async Websocket Mesh Solution
 
@@ -10,7 +14,7 @@
 3. Run it.
 
 ```bash
-$> porthouse
+$> porthouse run
 INFO:     Uvicorn running on http://127.0.0.1:52181 (Press CTRL+C to quit)
 ```
 
@@ -47,7 +51,7 @@ pip install porthouse
 Command Line Interface:
 
 ```py
-$> porthouse -h
+$> porthouse run -h
 ```
 
 As a module (FastAPI on uvicorn)
