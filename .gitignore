@@ -1,7 +1,7 @@
 scratch/
 .pyirc
 pip-wheel-metadata/
-build/
+build/run/
 dist/
 
 
