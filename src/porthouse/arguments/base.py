@@ -6,6 +6,8 @@ import os
 from . import installer, run
 from .. import config as conf_module
 from ..config import configure_conf
+from .. import log
+
 
 __all__ = ['get_parsed_args', 'get_args', 'get_parser']
 
@@ -22,7 +24,7 @@ def get_parser():
     parser.add_argument('--config-file', default=None) # None for real default.
 
     # parser.parse_args(['-f', 'foo', '@args.txt'])
-    parser.add_argument('--log-level',
+    parser.add_argument('-l', '--log-level',
                 action='store',
                 default=conf_module.LOG_LEVEL,
                 help='log level'
@@ -134,7 +136,7 @@ def resolve_config(namespace):
         s = f'File does not exist {fullpath=}'
         raise Exception(s)
 
-    print('Good path', filepath)
+    log.d(f'Good path: {filepath}')
     return filepath
     # else:
         # for None conf, assume _current directory_

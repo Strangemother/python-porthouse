@@ -3,11 +3,8 @@
 Check the token. If the token is owned by the correct client
 accept, else ditch and msg the client.
 """
+from . import tokens, log
 
-from loguru import logger
-dlog = logger.debug
-
-from . import tokens
 
 class Rule(object):
 
@@ -46,6 +43,6 @@ class RuleSet(object):
     async def is_valid(self, websocket, **extras):
         for rule in self.rules:
             if await rule.is_valid(websocket, **extras) is False:
-                dlog(f'failed rule {rule}')
+                log.d(f'failed rule {rule}')
                 return False
         return True

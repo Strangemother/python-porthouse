@@ -21,7 +21,7 @@ from .arguments import uvicorn_conf
 from .primary import router
 from .ingress import app
 from . import arguments
-
+from . import log
 
 HERE = Path(__file__).parent.as_posix()
 
@@ -61,7 +61,7 @@ async def main(await_task=True, **kw):
     """
     python -m uvicorn ingress:app --host 127.0.0.1 --port 9004  --reload
     """
-    print(kw)
+    log.t(kw)
     await router.set_system_config(kw) # The _raw_ config,
     config = get_config(kw) # "ingress:app"
     # config = get_config(app, kw) # "ingress:app"
@@ -94,11 +94,12 @@ def get_config(config=None):
             target=conf_module.INGRESS_APP,
         )
 
+    defaults['log_level'] = log.resolve_level(defaults['log_level'])
     # arg_items = arguments.get_parsed_args().items()
     wanted = tuple(uvicorn_conf.UVICORN_CONF_ALLOWED.keys()) + ('target',)
     # defaults.update({x:y for x,y in _conf.items() if x in wanted})
     # defaults.update(_conf)
-    print(defaults)
+    log.t(defaults)
     target = defaults.pop('target')
     c = uvicorn.Config(target, **defaults)
     return c
@@ -120,7 +121,7 @@ async def start_server_task(config):
     open socket addresses. Finally call upon the router to
     set the new socket names.
 
-    Return the server task cooroutine
+    Return the server task coroutine
     """
     server = uvicorn.Server(config)
     # await router.prepare_backpipe()

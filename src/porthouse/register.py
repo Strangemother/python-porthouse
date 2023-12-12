@@ -20,15 +20,12 @@ targeted addresses.
 
 The outer shell manages throughput to other routers.
 """
+import gc
+import uuid
+from collections import defaultdict
 
 from loguru import logger
 dlog = logger.debug
-
-
-import gc
-
-from collections import defaultdict
-import uuid
 
 from . import rooms
 
@@ -38,6 +35,7 @@ CONNECTIONS = {
     '_count': 0,
     '_total': 0
 }
+
 
 class Register(object):
 

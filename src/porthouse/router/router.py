@@ -121,7 +121,13 @@ class Router(backpipe.BackPipeMixin):
         self.primary_addresses = addresses
 
         my_host, my_port = addresses[0][0:2]
-        log.d('set_primary_sockets', my_host, my_port)
+        cn = self.__class__.__name__
+        clean_name = self.name
+        if clean_name is None:
+            clean_name = '"No Name"'
+
+        name = f"{cn}({clean_name})"
+        log.i(f'{name} {my_host}:{my_port}')
         if self.has_backpipe:
             await self.start_backpipe(my_host, my_port)
 

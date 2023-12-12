@@ -1,17 +1,18 @@
+import sys
+from pathlib import Path
+from typing import Optional
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from typing import Optional
 
-# app = FastAPI()
 
 from jinja2 import (Environment, PackageLoader, ChoiceLoader, FileSystemLoader,
     select_autoescape, Template)
 
-from pathlib import Path
-import sys
+from . import log
+
 
 HERE = Path(__file__).parent / 'view'
 sys.path.append(HERE.as_posix())
@@ -30,7 +31,7 @@ class JinjaEnvLoaders(object):
         ]
 
         fls = tuple(FileSystemLoader(*x) for x in names)
-        print('Generating', names)
+        log.t(f'Generating: {names}')
         return fls
 
     def gen_env(self):

@@ -5,6 +5,7 @@ from .installer import install_subparser
 from .. import config as conf
 from .. import run as porthouse_run
 from ..router import methods
+from .. import log
 
 """
 Arguments to accept:
@@ -22,9 +23,8 @@ def automain():
 
 
 def run_command(namespace):
-    print('run command')
+    log.i('Running porthouse async server')
     porthouse_run.async_server(**vars(namespace))
-
 
 
 class Helps:
@@ -92,7 +92,7 @@ def run_command_hook(subparsers):
             const=None,
         ))
 
-    add('--router-log-level',
+    add('-l','--router-log-level',
         action='store',
         default=conf.LOG_LEVEL,
         help=Helps.log_level
@@ -105,6 +105,12 @@ def run_command_hook(subparsers):
         help=Helps.routing_method,
         choices=routing_choices,
         # choices=['roomcast', 'supercast'],
+        )
+
+    add('--no-banner',
+        action='store_true',
+        default=conf.SUPRESS,
+        # help=Helps.routing_method,
         )
 
 

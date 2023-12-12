@@ -21,15 +21,16 @@ The local .porthouse file is TOML, applied into this config module using
 """
 import sys
 import tomli
+from . import log
 
-
+SUPRESS = '==supress=='
 LOG_LEVEL = 'debug'
 
 HOST = '127.0.0.1'
 DEBUG = True
 RELOAD = DEBUG
 PORT = 0# 9004
-
+NO_BANNER = False
 BALANCE_PORTS = ()
 BALANCE_ADDRESSES = (HOST, BALANCE_PORTS, )
 
@@ -56,10 +57,10 @@ def configure_conf(namespace):
     if conf is not None:
         merge_toml_to_config(conf)
     # apply any --param to config.PARAM if PARAM exists.
-    merge_args_to_config(namespace)
-
+    return merge_args_to_config(namespace)
 
 def merge_toml_to_config(conf):
+    print(f'Loading: {conf}')
     res  = tomli.loads(conf.read_text())
     write_items(res)
 
@@ -71,10 +72,11 @@ def merge_args_to_config(namespace):
         if key.startswith('_'):
             continue
         val = nks.get(key.lower(), None)
-        if val is not None:
-            keep[key] = val
-
+        if val in (None, SUPRESS):
+            continue
+        keep[key] = val
     write_items(keep)
+    return keep
 
 
 def write_items(items):
@@ -86,5 +88,5 @@ def write_items(items):
     target  = sys.modules[__name__]
 
     for k,v in items.items():
-        print(' -- Writing', k, ' == ', v)
+        log.t(f'Writing {k} = {v}')
         setattr(target, k, v)

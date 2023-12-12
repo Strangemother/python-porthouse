@@ -37,14 +37,10 @@ adapter = adapters.get_adapter('starlette', router)
 command_adapter = adapters.get_adapter('starlette', command_router)
 
 
-# router_pipe = RouterPipe(command_router=command_router, router=router)
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.d('lifespan Startup')
     # await asyncio.sleep(3)
-    # log.d('lifespan Startup - mount')
     await router.startup(app, adapter='starlette')
     yield
     log.d('lifespan shutdown')
@@ -57,18 +53,13 @@ async def primary_ingress(websocket, **kw):
     Upon a new message, call to the handle_message function
     """
     websocket._ok = await adapter.websocket_accept(websocket, **kw)
-    # websocket._ok = await router.websocket_accept(websocket, **kw)
 
     while websocket._ok:
         # data = await router.receive()
         data = await adapter.wait_receive(websocket)
         ok = await adapter.handle_message(websocket, data)
-        # ok = await handle_message(websocket, data)
     else:
         await adapter.wait_exit(websocket)
-        # if websocket.client_state.value == 1:  # websocket.CONNECTED
-        #     # await websocket.close()
-        #     await adapter.close(websocket)
 
 
 async def command_ingress(websocket, **kw):

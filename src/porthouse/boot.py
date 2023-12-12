@@ -1,24 +1,28 @@
-from .arguments import get_args
-# from loguru import logger
-from . import log
-# from . import run
-
+from pathlib import Path
 import sys
 
-from pathlib import Path
+from . import config
+from .arguments import get_args
+from . import log
+
 
 def print_banner(args):
-    level = args.log_level.upper()
-    conf = args.parsed_config if hasattr(args, 'parsed_config') else pargs.config
+    log_level = args.log_level.upper()
+    config_path = args.parsed_config if hasattr(args, 'parsed_config') else pargs.config
 
-    if conf is not None:
-        conf = str(Path(conf).absolute().as_posix())
+    has_conf = False
+    if config_path is not None:
+        has_conf = True
+        config_path = str(Path(config_path).absolute().as_posix())
 
-    lines = (f"\n\tPorthouse cli - ... Fancy Banner ... \n"
-             f"\t{level=}\n"
-             f"\t{conf=}\n"
-             f"\n"
-            )
+    lines = (f"\n\tPorthouse cli ... Fancy Banner ... \n"
+             f"\t{log_level=}\n"
+             )
+
+    if has_conf is True:
+        lines += f"\t{config_path=}\n"
+    lines += f"\n"
+
     print(lines)
 
 
@@ -26,15 +30,16 @@ def main_run():
     log.d(f'__main__::main executor')
     return cli_run()
 
-from .config import configure_conf
 
 def cli_run():
     args = get_args()
     log.configure_from_args(args)
+    config.configure_conf(args)
 
-    print_banner(args)
+    if config.NO_BANNER is False:
+    # if args.no_banner is False:
+        print_banner(args)
 
-    configure_conf(args)
 
     if hasattr(args, 'func'):
         return args.func(args)
@@ -45,7 +50,3 @@ def cli_run():
 
 if __name__ == '__main__':
     main_run()
-## future
-#
-# jupyter run
-# process/thread run
