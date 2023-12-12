@@ -30,16 +30,11 @@ from .config import configure_conf
 
 def cli_run():
     args = get_args()
+    log.configure_from_args(args)
 
     print_banner(args)
 
     configure_conf(args)
-
-    level = args.log_level.upper()
-    if hasattr(args, 'router_log_level'):
-        level = args.router_log_level.upper()
-    # global configure.
-    log.logger.configure(handlers=[{"sink": sys.stdout, "level": level}])
 
     if hasattr(args, 'func'):
         return args.func(args)
