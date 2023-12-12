@@ -1,7 +1,7 @@
 # Python Porthouse 🏢
 
 [![Upload Python Package](https://github.com/Strangemother/python-porthouse/actions/workflows/python-publish.yml/badge.svg)](https://github.com/Strangemother/python-porthouse/actions/workflows/python-publish.yml)
-![PyPI](https://img.shields.io/pypi/v/python-porthouse?label=porthouse)
+![PyPI](https://img.shields.io/pypi/v/porthouse?label=porthouse)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/porthouse)
 
 
